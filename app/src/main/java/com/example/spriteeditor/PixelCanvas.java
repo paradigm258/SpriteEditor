@@ -1,8 +1,10 @@
 package com.example.spriteeditor;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -46,7 +48,7 @@ public class PixelCanvas extends View {
         float scaleX = (float)getWidth()/(float)getImgWidth();
         float scaleY = (float)getHeight()/(float)getImgHeight();
         minScale = Math.min(scaleX,scaleY);
-        scale =minScale;
+        scale = 1;
     }
     @Override
     public void draw(Canvas canvas) {
@@ -57,7 +59,36 @@ public class PixelCanvas extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        sgd.onTouchEvent(event);
+//        sgd.onTouchEvent(event);
+//        event.getPointerId(0);
+//        switch (event.getActionMasked()){
+//            case MotionEvent.ACTION_DOWN:
+//                touchStartX=event.getX();
+//                touchStartY=event.getY();
+//                break;
+//            case MotionEvent.ACTION_MOVE:
+//                float x = event.getX();
+//                float y = event.getY();
+//                float deltaX = x-touchStartX;
+//                float deltaY = y-touchStartY;
+//                deltaX/=scale;
+//                deltaY/=scale;
+//                hPan(deltaX);
+//                vPan(deltaY);
+//                touchStartX=x;
+//                touchStartY=y;
+//                break;
+//            default:
+//                break;
+//        }
+//        performClick();
+//        invalidate();
+
+        int pointerCount = event.getPointerCount();
+        if(pointerCount>1){
+            return true;
+        }
+        boolean setPixel = true;
         event.getPointerId(0);
         switch (event.getActionMasked()){
             case MotionEvent.ACTION_DOWN:
@@ -65,20 +96,25 @@ public class PixelCanvas extends View {
                 touchStartY=event.getY();
                 break;
             case MotionEvent.ACTION_MOVE:
-                float x = event.getX();
-                float y = event.getY();
-                float deltaX = x-touchStartX;
-                float deltaY = y-touchStartY;
-                deltaX/=scale;
-                deltaY/=scale;
-                hPan(deltaX);
-                vPan(deltaY);
-                touchStartX=x;
-                touchStartY=y;
+                touchStartX=event.getX();
+                touchStartY=event.getY();
                 break;
             default:
+                setPixel = false;
                 break;
         }
+
+        if(setPixel){
+            touchStartX/=imgW;
+            touchStartY/=imgH;
+            System.out.println(this.getTopPaddingOffset());
+            System.out.println(event.getX() + " " + event.getY());
+            System.out.println(touchStartX + " " + touchStartY);
+            Bitmap newBitmap = bitmap.copy( Bitmap.Config.ARGB_8888 , true);
+            newBitmap.setPixel((int) touchStartX, (int)touchStartY, Color.argb(255,0,0,0));
+            this.setBitmap(newBitmap);
+        }
+
         performClick();
         invalidate();
         return true;
