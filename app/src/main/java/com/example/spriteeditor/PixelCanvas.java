@@ -48,7 +48,9 @@ public class PixelCanvas extends View {
         float scaleX = (float)getWidth()/(float)getImgWidth();
         float scaleY = (float)getHeight()/(float)getImgHeight();
         minScale = Math.min(scaleX,scaleY);
-        scale = 1;
+        scale = minScale;
+        performClick();
+        invalidate();
     }
     @Override
     public void draw(Canvas canvas) {
@@ -105,13 +107,13 @@ public class PixelCanvas extends View {
         }
 
         if(setPixel){
-            touchStartX/=imgW;
-            touchStartY/=imgH;
-            System.out.println(this.getTopPaddingOffset());
+            int roundedX = Math.round(touchStartX/scale);
+            int roundedY = Math.round(touchStartY/scale);
+            System.out.println(scale);
             System.out.println(event.getX() + " " + event.getY());
             System.out.println(touchStartX + " " + touchStartY);
             Bitmap newBitmap = bitmap.copy( Bitmap.Config.ARGB_8888 , true);
-            newBitmap.setPixel((int) touchStartX, (int)touchStartY, Color.argb(255,0,0,0));
+            newBitmap.setPixel(roundedX, roundedY, Color.argb(255,0,0,0));
             this.setBitmap(newBitmap);
         }
 
