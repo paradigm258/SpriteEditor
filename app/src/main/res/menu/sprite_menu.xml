@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="Import Picture"
+        android:id="@+id/importPicture"></item>
+    <item android:title="Export Picture"
+        android:id="@+id/exportPicture"></item>
+    <item android:title="New Sprite"
+        android:id="@+id/newSprite"></item>
+</menu>

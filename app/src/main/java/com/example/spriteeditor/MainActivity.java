@@ -15,6 +15,8 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -86,6 +88,28 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.sprite_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        switch (id){
+            case R.id.importPicture:
+                openGallery();
+                break;
+            case R.id.exportPicture:
+                saveImageToGallery();
+                break;
+                default:
+                    break;
+        }
+        return true;
+    }
+
     private void openGallery(){
         Intent gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
         startActivityForResult(gallery, PICK_IMAGE);
@@ -128,6 +152,15 @@ public class MainActivity extends AppCompatActivity {
             fos = new FileOutputStream(imagePath);
             // Use the compress method on the BitMap object to write image to the OutputStream
             pixelCanvas.bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+
+//            MediaScannerConnection.scanFile(this,
+//                    new String[] { imagePath.toString() }, null,
+//                    new MediaScannerConnection.OnScanCompletedListener() {
+//                        public void onScanCompleted(String path, Uri uri) {
+//                            Log.i("ExternalStorage", "Scanned " + path + ":");
+//                            Log.i("ExternalStorage", "-> uri=" + uri);
+//                        }
+//                    });
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
