@@ -47,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 pixelCanvas.setBitmap(BitmapFactory.decodeResource(getResources(),R.drawable.piskel));
+                pixelCanvas.getRes();
             }
         });
 
@@ -79,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
                 int canvasSize = Integer.parseInt(data);
                 Bitmap newBitmap = Bitmap.createBitmap(canvasSize, canvasSize, Bitmap.Config.ARGB_8888);
                 pixelCanvas.setBitmap(newBitmap);
+                pixelCanvas.getRes();
             }
 
             @Override
