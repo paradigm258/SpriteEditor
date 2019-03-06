@@ -25,6 +25,7 @@ public class PixelCanvas extends View {
     float height;
     float imgW;
     float imgH;
+    int brushColor;
 
     public PixelCanvas(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -45,6 +46,10 @@ public class PixelCanvas extends View {
 
     public void setBitmap(Bitmap bitmap) {
         this.bitmap = bitmap;
+        invalidate();
+    }
+
+    public void getRes() {
         this.bg = bitmap.copy(Bitmap.Config.ARGB_8888, true);
         for (int x = 0; x < bitmap.getWidth(); x++) {
             for (int y = 0; y < bitmap.getHeight(); y++) {
@@ -55,10 +60,7 @@ public class PixelCanvas extends View {
                 }
             }
         }
-        invalidate();
-    }
-
-    public void getRes() {
+        brushColor = 0xFF000000;
         width = getWidth();
         height = getHeight();
         imgW = getImgWidth();
@@ -93,6 +95,9 @@ public class PixelCanvas extends View {
                 case MotionEvent.ACTION_MOVE:
                     touchStartX = event.getX();
                     touchStartY = event.getY();
+                    if(touchStartY>height||touchStartY<top){
+                        return true;
+                    }
                     break;
                 default:
                     setPixel = false;
@@ -102,13 +107,12 @@ public class PixelCanvas extends View {
                 int roundedX = (int) Math.floor(touchStartX / scale - left);
                 int roundedY = (int) Math.floor(touchStartY / scale - top);
                 System.out.println(scale);
-                System.out.println(event.getX() + " " + event.getY());
+                System.out.println(height + " " + width);
                 System.out.println(touchStartX + " " + touchStartY);
 
                 Bitmap newBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
-                bitmap.setPixel(roundedX, roundedY, Color.argb(255, 0, 0, 0));
+                newBitmap.setPixel(roundedX, roundedY, brushColor);
                 this.setBitmap(newBitmap);
-
             }
         }
         performClick();
