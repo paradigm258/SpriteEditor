@@ -41,6 +41,8 @@ public class PixelCanvas extends View {
     }
     public void setBitmap(Bitmap bitmap) {
         this.bitmap = bitmap;
+    }
+    public void getRes(){
         width = getWidth();
         height = getHeight();
         imgW = getImgWidth();
@@ -49,8 +51,6 @@ public class PixelCanvas extends View {
         float scaleY = (float)getHeight()/(float)getImgHeight();
         minScale = Math.min(scaleX,scaleY);
         scale = minScale;
-        performClick();
-        invalidate();
     }
     @Override
     public void draw(Canvas canvas) {
@@ -61,62 +61,36 @@ public class PixelCanvas extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-//        sgd.onTouchEvent(event);
-//        event.getPointerId(0);
-//        switch (event.getActionMasked()){
-//            case MotionEvent.ACTION_DOWN:
-//                touchStartX=event.getX();
-//                touchStartY=event.getY();
-//                break;
-//            case MotionEvent.ACTION_MOVE:
-//                float x = event.getX();
-//                float y = event.getY();
-//                float deltaX = x-touchStartX;
-//                float deltaY = y-touchStartY;
-//                deltaX/=scale;
-//                deltaY/=scale;
-//                hPan(deltaX);
-//                vPan(deltaY);
-//                touchStartX=x;
-//                touchStartY=y;
-//                break;
-//            default:
-//                break;
-//        }
-//        performClick();
-//        invalidate();
-
         int pointerCount = event.getPointerCount();
         if(pointerCount>1){
-            return true;
+            dragAndScale(event);
+        }else {
+            boolean setPixel = true;
+            event.getPointerId(0);
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    touchStartX = event.getX();
+                    touchStartY = event.getY();
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    touchStartX = event.getX();
+                    touchStartY = event.getY();
+                    break;
+                default:
+                    setPixel = false;
+                    break;
+            }
+            if (setPixel) {
+                int roundedX = Math.round(touchStartX / scale-left);
+                int roundedY = Math.round(touchStartY / scale-top);
+                System.out.println(scale);
+                System.out.println(event.getX() + " " + event.getY());
+                System.out.println(touchStartX + " " + touchStartY);
+                Bitmap newBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                newBitmap.setPixel(roundedX, roundedY, Color.argb(255, 0, 0, 0));
+                this.setBitmap(newBitmap);
+            }
         }
-        boolean setPixel = true;
-        event.getPointerId(0);
-        switch (event.getActionMasked()){
-            case MotionEvent.ACTION_DOWN:
-                touchStartX=event.getX();
-                touchStartY=event.getY();
-                break;
-            case MotionEvent.ACTION_MOVE:
-                touchStartX=event.getX();
-                touchStartY=event.getY();
-                break;
-            default:
-                setPixel = false;
-                break;
-        }
-
-        if(setPixel){
-            int roundedX = Math.round(touchStartX/scale);
-            int roundedY = Math.round(touchStartY/scale);
-            System.out.println(scale);
-            System.out.println(event.getX() + " " + event.getY());
-            System.out.println(touchStartX + " " + touchStartY);
-            Bitmap newBitmap = bitmap.copy( Bitmap.Config.ARGB_8888 , true);
-            newBitmap.setPixel(roundedX, roundedY, Color.argb(255,0,0,0));
-            this.setBitmap(newBitmap);
-        }
-
         performClick();
         invalidate();
         return true;
@@ -135,7 +109,7 @@ public class PixelCanvas extends View {
     }
     private void hPan(float delta){
         float newLeft = left+delta;
-        float edge = (width/scale)-imgH;
+        float edge = (width/scale)-imgW;
         if(delta>0&&newLeft>0){
             left = 0;
         }else if(delta<0&&newLeft<edge){
@@ -156,6 +130,30 @@ public class PixelCanvas extends View {
             scale = scale * detector.getScaleFactor();
             scale = Math.max(minScale,Math.min(scale,65));
             return true;
+        }
+    }
+    private void dragAndScale(MotionEvent event){
+        sgd.onTouchEvent(event);
+
+        switch (event.getActionMasked()){
+            case MotionEvent.ACTION_DOWN:
+                touchStartX=event.getX();
+                touchStartY=event.getY();
+                break;
+            case MotionEvent.ACTION_MOVE:
+                float x = event.getX();
+                float y = event.getY();
+                float deltaX = x-touchStartX;
+                float deltaY = y-touchStartY;
+                deltaX/=scale;
+                deltaY/=scale;
+                hPan(deltaX);
+                vPan(deltaY);
+                touchStartX=x;
+                touchStartY=y;
+                break;
+            default:
+                break;
         }
     }
 }
