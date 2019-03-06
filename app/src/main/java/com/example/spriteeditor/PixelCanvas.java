@@ -1,7 +1,6 @@
 package com.example.spriteeditor;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -13,58 +12,77 @@ import android.view.View;
 
 public class PixelCanvas extends View {
     Bitmap bitmap;
+    Bitmap bg;
     private float touchStartX;
     private float touchStartY;
-    private float left =0 ;
-    private float top =0 ;
+    private float left = 0;
+    private float top = 0;
     private float scale = 1;
-    private float minScale ;
+    private float minScale;
     Paint paint;
     ScaleGestureDetector sgd;
     float width;
     float height;
     float imgW;
     float imgH;
+
     public PixelCanvas(Context context, AttributeSet attrs) {
         super(context, attrs);
-        sgd = new ScaleGestureDetector(context,new ScaleListener());
+        sgd = new ScaleGestureDetector(context, new ScaleListener());
         paint = new Paint();
         paint.setAntiAlias(false);
         paint.setDither(false);
         paint.setFilterBitmap(false);
     }
-    public int getImgWidth(){
+
+    public int getImgWidth() {
         return bitmap.getWidth();
     }
-    public int getImgHeight(){
+
+    public int getImgHeight() {
         return bitmap.getHeight();
     }
+
     public void setBitmap(Bitmap bitmap) {
         this.bitmap = bitmap;
+        this.bg = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+        for (int x = 0; x < bitmap.getWidth(); x++) {
+            for (int y = 0; y < bitmap.getHeight(); y++) {
+                if (x % 2 == y % 2) {
+                    bg.setPixel(x, y, 0xFFF3F3F3);
+                } else {
+                    bg.setPixel(x, y, 0xFFC2C2C2);
+                }
+            }
+        }
+        invalidate();
     }
-    public void getRes(){
+
+    public void getRes() {
         width = getWidth();
         height = getHeight();
         imgW = getImgWidth();
         imgH = getImgHeight();
-        float scaleX = (float)getWidth()/(float)getImgWidth();
-        float scaleY = (float)getHeight()/(float)getImgHeight();
-        minScale = Math.min(scaleX,scaleY);
+        float scaleX = (float) getWidth() / (float) getImgWidth();
+        float scaleY = (float) getHeight() / (float) getImgHeight();
+        minScale = Math.min(scaleX, scaleY);
         scale = minScale;
     }
+
     @Override
     public void draw(Canvas canvas) {
-        canvas.scale(scale,scale);
-        canvas.drawBitmap(bitmap,left,top,paint);
+        canvas.scale(scale, scale);
+        canvas.drawBitmap(bg, left, top, paint);
+        canvas.drawBitmap(bitmap, left, top, paint);
         super.draw(canvas);
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int pointerCount = event.getPointerCount();
-        if(pointerCount>1){
+        if (pointerCount > 1) {
             dragAndScale(event);
-        }else {
+        } else {
             boolean setPixel = true;
             event.getPointerId(0);
             switch (event.getActionMasked()) {
@@ -81,76 +99,81 @@ public class PixelCanvas extends View {
                     break;
             }
             if (setPixel) {
-                int roundedX = Math.round(touchStartX / scale-left);
-                int roundedY = Math.round(touchStartY / scale-top);
+                int roundedX = (int) Math.floor(touchStartX / scale - left);
+                int roundedY = (int) Math.floor(touchStartY / scale - top);
                 System.out.println(scale);
                 System.out.println(event.getX() + " " + event.getY());
                 System.out.println(touchStartX + " " + touchStartY);
+
                 Bitmap newBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
-                newBitmap.setPixel(roundedX, roundedY, Color.argb(255, 0, 0, 0));
+                bitmap.setPixel(roundedX, roundedY, Color.argb(255, 0, 0, 0));
                 this.setBitmap(newBitmap);
+
             }
         }
         performClick();
         invalidate();
         return true;
     }
-    private void vPan(float delta){
-        float newTop = top+delta;
-        float edge = (height/scale)-imgH;
-        if(delta>0&&newTop>0){
+
+    private void vPan(float delta) {
+        float newTop = top + delta;
+        float edge = (height / scale) - imgH;
+        if (delta > 0 && newTop > 0) {
             top = 0;
-        }else if(delta<0&&newTop<edge){
-            if(edge<0)
-            top = edge;
-        }else{
+        } else if (delta < 0 && newTop < edge) {
+            if (edge < 0)
+                top = edge;
+        } else {
             top = newTop;
         }
     }
-    private void hPan(float delta){
-        float newLeft = left+delta;
-        float edge = (width/scale)-imgW;
-        if(delta>0&&newLeft>0){
+
+    private void hPan(float delta) {
+        float newLeft = left + delta;
+        float edge = (width / scale) - imgW;
+        if (delta > 0 && newLeft > 0) {
             left = 0;
-        }else if(delta<0&&newLeft<edge){
-            if(edge<0)
-            left = edge;
-        }else{
+        } else if (delta < 0 && newLeft < edge) {
+            if (edge < 0)
+                left = edge;
+        } else {
             left = newLeft;
         }
     }
+
     @Override
     public boolean performClick() {
         return super.performClick();
     }
 
-    private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener{
+    private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
             scale = scale * detector.getScaleFactor();
-            scale = Math.max(minScale,Math.min(scale,65));
+            scale = Math.max(minScale, Math.min(scale, 64));
             return true;
         }
     }
-    private void dragAndScale(MotionEvent event){
-        sgd.onTouchEvent(event);
 
-        switch (event.getActionMasked()){
+    private void dragAndScale(MotionEvent event) {
+        sgd.onTouchEvent(event);
+        switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
-                touchStartX=event.getX();
-                touchStartY=event.getY();
+                touchStartX = event.getX();
+                touchStartY = event.getY();
                 break;
             case MotionEvent.ACTION_MOVE:
                 float x = event.getX();
                 float y = event.getY();
-                float deltaX = x-touchStartX;
-                float deltaY = y-touchStartY;
-                deltaX/=scale;
-                deltaY/=scale;
+                float deltaX = x - touchStartX;
+                float deltaY = y - touchStartY;
+                deltaX /= scale;
+                deltaY /= scale;
                 hPan(deltaX);
                 vPan(deltaY);
-                touchStartX=x;
-                touchStartY=y;
+                touchStartX = x;
+                touchStartY = y;
                 break;
             default:
                 break;
