@@ -52,6 +52,8 @@ public class PixelCanvas extends View {
         paint.setAntiAlias(false);
         paint.setDither(false);
         paint.setFilterBitmap(false);
+
+        brushColor = 0xFF000000;
     }
 
     public int getImgWidth() {
@@ -80,7 +82,6 @@ public class PixelCanvas extends View {
             }
         }
         //Adjust for image resolution
-        brushColor = 0xFF000000;
         width = getWidth();
         height = getHeight();
         imgW = getImgWidth();
@@ -93,9 +94,11 @@ public class PixelCanvas extends View {
 
     @Override
     public void draw(Canvas canvas) {
-        canvas.scale(scale, scale);
-        canvas.drawBitmap(bg, left, top, paint);
-        canvas.drawBitmap(bitmap, left, top, paint);
+        if(bg!=null && bitmap!=null) {
+            canvas.scale(scale, scale);
+            canvas.drawBitmap(bg, left, top, paint);
+            canvas.drawBitmap(bitmap, left, top, paint);
+        }
         super.draw(canvas);
     }
 
