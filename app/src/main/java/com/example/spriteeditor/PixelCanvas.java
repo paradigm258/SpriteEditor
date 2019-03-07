@@ -26,7 +26,7 @@ public class PixelCanvas extends View {
     float height;
     float imgW;
     float imgH;
-    int brushColor = Color.BLACK;
+    int brushColor;
     GestureDetector gestureDetector;
     public PixelCanvas(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -80,6 +80,7 @@ public class PixelCanvas extends View {
             }
         }
         //Adjust for image resolution
+        brushColor = 0xFF000000;
         width = getWidth();
         height = getHeight();
         imgW = getImgWidth();
@@ -114,16 +115,19 @@ public class PixelCanvas extends View {
                 case MotionEvent.ACTION_MOVE:
                     touchStartX = event.getX();
                     touchStartY = event.getY();
+                    if(touchStartY>height||touchStartY<top){
+                        return true;
+                    }
                     break;
                 default:
                     setPixel = false;
                     break;
             }
             if (setPixel) {
-                int roundedX = Math.round(touchStartX / scale - left);
-                int roundedY = Math.round(touchStartY / scale - top);
+                int roundedX = (int) Math.floor(touchStartX / scale - left);
+                int roundedY = (int) Math.floor(touchStartY / scale - top);
                 System.out.println(scale);
-                System.out.println(roundedX + " " + roundedY);
+                System.out.println(height + " " + width);
                 System.out.println(touchStartX + " " + touchStartY);
                 if(roundedX>=0&&roundedX<imgW && roundedY>=0&&roundedY<imgH)
                 bitmap.setPixel(roundedX, roundedY, Color.argb(255, 0, 0, 0));
