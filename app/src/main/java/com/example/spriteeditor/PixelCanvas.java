@@ -130,7 +130,7 @@ public class PixelCanvas extends View {
                 System.out.println(height + " " + width);
                 System.out.println(touchStartX + " " + touchStartY);
                 if(roundedX>=0&&roundedX<imgW && roundedY>=0&&roundedY<imgH)
-                bitmap.setPixel(roundedX, roundedY, Color.argb(255, 0, 0, 0));
+                bitmap.setPixel(roundedX, roundedY, brushColor);
             }
         }
         performClick();
