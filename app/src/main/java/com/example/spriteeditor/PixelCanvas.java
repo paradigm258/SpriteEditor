@@ -11,31 +11,49 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 
 public class PixelCanvas extends View {
+
+    public enum DRAWMODE{
+        PEN,
+        LINE,
+        RECT,
+        CUT,
+        MOVE,
+        FILL
+    }
+
     Bitmap bitmap;
     Bitmap bg;
     Bitmap preview;
 
-    private float touchStartX;
-    private float touchStartY;
-    private int shapeStartX;
-    private int shapeStartY;
-    private int shapeEndX;
-    private int shapeEndY;
-    private int pvTop;
-    private int pvLeft;
+//    private float touchStartX;
+//    private float touchStartY;
+    private int roundedX;
+    private int roundedY;
+
     private float left = 0;
     private float top = 0;
     private float scale = 1;
     private float minScale;
-    private boolean pv = true;
+
+    private int shapeStartX;
+    private int shapeStartY;
+    private float pvTop;
+    private float pvLeft;
+
+    private boolean movable;
+
     Paint paint;
-    ScaleGestureDetector sgd;
     float width;
     float height;
     int imgW;
     int imgH;
     int brushColor;
+
+    public DRAWMODE mode = DRAWMODE.RECT;
+
+    ScaleGestureDetector sgd;
     GestureDetector gestureDetector;
+    GestureDetector shapeMove;
 
     public PixelCanvas(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -56,7 +74,29 @@ public class PixelCanvas extends View {
                 return true;
             }
         });
+        shapeMove = new GestureDetector(this.getContext(),new GestureDetector.SimpleOnGestureListener(){
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                int roundedX = (int) Math.floor(e.getX() / scale - left);
+                int roundedY = (int) Math.floor(e.getY() / scale - top);
+                boolean out = roundedX<pvLeft || roundedY<pvTop ||
+                        roundedX>pvLeft+preview.getWidth() || roundedY>pvTop+preview.getHeight();
+                if(out){
+                    mode = DRAWMODE.LINE;
+                    movable = false;
+                    drawShape();
+                    invalidate();
+                }
+                return true;
+            }
 
+            @Override
+            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                pvLeft += -distanceX / scale;
+                pvTop += -distanceY / scale;
+                return true;
+            }
+        });
         //Init paint for canvas
         paint = new Paint();
         paint.setAntiAlias(false);
@@ -90,6 +130,8 @@ public class PixelCanvas extends View {
         float scaleY = (float) getHeight() / (float) getImgHeight();
         minScale = Math.min(scaleX, scaleY);
         scale = minScale;
+        left =0;
+        top =0;
         //Init background
         bg = Bitmap.createBitmap(imgW, imgH, Bitmap.Config.ARGB_8888);
         for (int x = 0; x < bg.getWidth(); x++) {
@@ -105,16 +147,17 @@ public class PixelCanvas extends View {
             canvas.scale(scale, scale);
             canvas.drawBitmap(bg, left, top, paint);
             canvas.drawBitmap(bitmap, left, top, paint);
-
         }
-        if (pv && preview != null) {
-            canvas.drawBitmap(preview, pvLeft + left, pvTop + top, paint);
+        if (preview !=null && movable) {
+            //Draw preview
+            canvas.drawBitmap(preview, (int)(pvLeft + left), (int)(pvTop + top), paint);
+            //Draw outline
             Paint pvPaint = new Paint(paint);
             pvPaint.setColor(0xFF0000FF);
             pvPaint.setStyle(Paint.Style.STROKE);
             pvPaint.setStrokeWidth(1 / scale * 5);
-            canvas.drawRect(pvLeft + left, pvTop + top,
-                    pvLeft + left + preview.getWidth(), pvTop + top + preview.getHeight(), pvPaint);
+            canvas.drawRect((int)(pvLeft + left), (int)(pvTop + top),
+                    (int)(pvLeft + left) + preview.getWidth(), (int)(pvTop + top) + preview.getHeight(), pvPaint);
         }
         super.draw(canvas);
     }
@@ -125,36 +168,46 @@ public class PixelCanvas extends View {
         if (pointerCount > 1) {
             dragAndScale(event);
         } else {
-            boolean setPixel = true;
-            event.getPointerId(0);
-            switch (event.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                    touchStartX = event.getX();
-                    touchStartY = event.getY();
+//            event.getPointerId(0);
+//            switch (event.getActionMasked()) {
+//                case MotionEvent.ACTION_DOWN:
+//                    touchStartX = event.getX();
+//                    touchStartY = event.getY();
+//                    break;
+//                case MotionEvent.ACTION_MOVE:
+//                    touchStartX = event.getX();
+//                    touchStartY = event.getY();
+//                    if (touchStartY >= height || touchStartX >= width || touchStartX<0 || touchStartY<0) {
+//                        return false;
+//                    }
+//                    break;
+//                default:
+//                    break;
+//            }
+            float x = event.getX();
+            float y = event.getY();
+
+            roundedX = (int) Math.floor(x / scale - left);
+            roundedY = (int) Math.floor(y / scale - top);
+
+            switch (mode){
+                case PEN:
+                    System.out.println(scale);
+                    System.out.println(height + " " + width);
+                    //System.out.println(touchStartX + " " + touchStartY);
+                    drawPixel(roundedX,roundedY);
                     break;
-                case MotionEvent.ACTION_MOVE:
-                    touchStartX = event.getX();
-                    touchStartY = event.getY();
-                    if (touchStartY > height || touchStartY < top) {
-                        return true;
-                    }
+                case MOVE:
+                    shapeMove.onTouchEvent(event);
+                    break;
+                case FILL:
+                    floodFill(roundedX,roundedY,bitmap.getPixel(roundedX,roundedY));
                     break;
                 default:
-                    setPixel = false;
-                    break;
+                    makeShape(event);
+                    movable = true;
             }
 
-            if (setPixel) {
-                int roundedX = (int) Math.floor(touchStartX / scale - left);
-                int roundedY = (int) Math.floor(touchStartY / scale - top);
-                System.out.println(scale);
-                System.out.println(height + " " + width);
-                System.out.println(touchStartX + " " + touchStartY);
-                if (roundedX >= 0 && roundedX < imgW && roundedY >= 0 && roundedY < imgH)
-                    bitmap.setPixel(roundedX, roundedY, brushColor);
-            } else {
-                makeShape(event);
-            }
         }
         performClick();
         invalidate();
@@ -166,7 +219,6 @@ public class PixelCanvas extends View {
         return super.performClick();
     }
 
-
     private void dragAndScale(MotionEvent event) {
         sgd.onTouchEvent(event);
         gestureDetector.onTouchEvent(event);
@@ -177,26 +229,71 @@ public class PixelCanvas extends View {
     private void makeShape(MotionEvent event) {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
-                shapeStartX = (int) Math.floor(touchStartX / scale - left);
-                shapeStartY = (int) Math.floor(touchStartY / scale - top);
+                shapeStartX = roundedX;
+                shapeStartY = roundedY;
+                break;
             case MotionEvent.ACTION_MOVE:
-                shapeEndX = (int) Math.floor(touchStartX / scale - left);
-                shapeEndY = (int) Math.floor(touchStartY / scale - top);
-                int preViewHeight = Math.abs(shapeStartY - shapeEndY) + 1;
-                int preViewWidth = Math.abs(shapeStartX - shapeEndX) + 1;
+                int preViewWidth = Math.abs(shapeStartX - roundedX) + 1;
+                int preViewHeight = Math.abs(shapeStartY - roundedY) + 1;
                 preview = Bitmap.createBitmap(preViewWidth, preViewHeight, Bitmap.Config.ARGB_8888);
-                pvLeft = Math.min(shapeStartX, shapeEndX);
-                pvTop = Math.min(shapeStartY, shapeEndY);
-                drawLine(shapeStartX - pvLeft, shapeStartY - pvTop, shapeEndX - pvLeft, shapeEndY - pvTop, preview);
+                pvLeft = Math.min(shapeStartX, roundedX);
+                pvTop = Math.min(shapeStartY, roundedY);
+                switch (mode) {
+                    case CUT:
+                        drawCut();
+                        break;
+                    case LINE:
+                        drawLine();
+                        break;
+                    case RECT:
+                        drawRect();
+                        break;
+                }
                 break;
             case MotionEvent.ACTION_UP:
-                drawLine(shapeStartX,shapeStartY,shapeEndX,shapeEndY,bitmap);
+                mode = DRAWMODE.MOVE;
                 break;
         }
     }
 
+    private void drawShape(){
+        for(int y=0;y<preview.getHeight();y++){
+            for(int x=0;x<preview.getWidth();x++){
+                int pixel = preview.getPixel(x,y);
+                if(pixel!=0){
+                    int bX = (int)(x+pvLeft);
+                    int bY = (int)(y+pvTop);
+                    drawPixel(bX,bY);
+                }
+            }
+        }
+    }
+
+    private void drawCut(){
+        for(int x=0;x<preview.getWidth();x++){
+            for(int y=0;y<preview.getHeight();y++){
+                preview.setPixel(x,y,bitmap.getPixel(x+(int)pvLeft,y+(int)pvTop));
+            }
+        }
+    }
+
+    private void drawRect(){
+        for(int x=0;x<preview.getWidth();x++){
+            preview.setPixel(x,0,brushColor);
+            preview.setPixel(x,preview.getHeight()-1,brushColor);
+        }
+        for(int y=0;y<preview.getHeight();y++){
+            preview.setPixel(0,y,brushColor);
+            preview.setPixel(preview.getWidth()-1,y,brushColor);
+        }
+    }
+
     @SuppressWarnings("SuspiciousNameCombination")
-    public void drawLine(int x1, int y1, int x2, int y2, Bitmap bitmap) {
+    private void drawLine() {
+        int x1=shapeStartX - (int)pvLeft;
+        int y1=shapeStartY - (int)pvTop;
+        int x2=roundedX - (int)pvLeft;
+        int y2=roundedY - (int)pvTop;
         boolean steep = Math.abs(y1 - y2) > Math.abs(x1 - x2);
         if (steep) {
             int temp;
@@ -218,26 +315,26 @@ public class PixelCanvas extends View {
         float dx = x2 - x1;
         float dy = Math.abs(y2 - y1);
 
-        float error = dx / 2.0f;
-        int ystep = (y1 < y2) ? 1 : -1;
+        float error = 0;
+        int yStep = (y1 < y2) ? 1 : -1;
         int y = y1;
 
         int maxX = x2;
         for (int x = x1; x <= maxX; x++) {
             if (steep) {
-                bitmap.setPixel(y, x, brushColor);
+                preview.setPixel(y, x, brushColor);
             } else {
-                bitmap.setPixel(x, y, brushColor);
+                preview.setPixel(x, y, brushColor);
             }
-            error -= dy;
-            if (error < 0) {
-                y += ystep;
-                error += dx;
+            error += (dy/dx);
+            if (error > 0.5f) {
+                y += yStep;
+                error -= 1;
             }
         }
     }
 
-    public void floodFill(int x, int y, int floodColor) {
+    private void floodFill(int x, int y, int floodColor) {
         if (x < 0 || x >= imgW || y < 0 || y >= imgH) return;
         int color = bitmap.getPixel(x, y);
         if (color != floodColor) return;
@@ -246,5 +343,10 @@ public class PixelCanvas extends View {
         floodFill(x, y + 1, color);
         floodFill(x - 1, y, color);
         floodFill(x, y - 1, color);
+    }
+
+    private void drawPixel(int x, int y){
+        if (x >= 0 && x < imgW && y >= 0 && y < imgH)
+            bitmap.setPixel(x, y, brushColor);
     }
 }
