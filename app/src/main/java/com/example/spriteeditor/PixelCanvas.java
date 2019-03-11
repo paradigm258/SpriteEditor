@@ -29,8 +29,6 @@ public class PixelCanvas extends View {
     Bitmap bg;
     Bitmap preview;
 
-//    private float touchStartX;
-//    private float touchStartY;
     private int roundedX;
     private int roundedY;
 
@@ -53,7 +51,7 @@ public class PixelCanvas extends View {
     int imgH;
     int brushColor;
 
-    public DRAWMODE mode = DRAWMODE.RECT;
+    public DRAWMODE mode = DRAWMODE.PEN;
 
     ScaleGestureDetector sgd;
     GestureDetector gestureDetector;
@@ -108,6 +106,8 @@ public class PixelCanvas extends View {
         paint.setFilterBitmap(false);
 
         brushColor = 0xFF000000;
+        historySize = 5;
+        newHistory();
     }
 
     public int getImgWidth() {
@@ -143,6 +143,12 @@ public class PixelCanvas extends View {
                 bg.setPixel(x, y, x % 2 == y % 2 ? 0xFFF3F3F3 : 0xFFC2C2C2);
             }
         }
+    }
+
+    public void newHistory(){
+        lastBitmap = null;
+        bitmapHistory = new Bitmap[historySize];
+        historyCounter = 0;
     }
 
     @Override
@@ -195,22 +201,14 @@ public class PixelCanvas extends View {
         if (pointerCount > 1) {
             dragAndScale(event);
         } else {
-//            event.getPointerId(0);
-//            switch (event.getActionMasked()) {
-//                case MotionEvent.ACTION_DOWN:
-//                    touchStartX = event.getX();
-//                    touchStartY = event.getY();
-//                    break;
-//                case MotionEvent.ACTION_MOVE:
-//                    touchStartX = event.getX();
-//                    touchStartY = event.getY();
-//                    if (touchStartY >= height || touchStartX >= width || touchStartX<0 || touchStartY<0) {
-//                        return false;
-//                    }
-//                    break;
-//                default:
-//                    break;
-//            }
+            event.getPointerId(0);
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    updateBitmapHistory();
+                default:
+                    break;
+            }
+
             float x = event.getX();
             float y = event.getY();
 
