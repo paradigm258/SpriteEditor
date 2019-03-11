@@ -13,6 +13,10 @@ import android.view.View;
 
 public class PixelCanvas extends View {
     Bitmap bitmap;
+    Bitmap lastBitmap;
+    Bitmap[] bitmapHistory;
+    int historyCounter;
+    int historySize;
     Bitmap bg;
     private float touchStartX;
     private float touchStartY;
@@ -53,7 +57,15 @@ public class PixelCanvas extends View {
         paint.setDither(false);
         paint.setFilterBitmap(false);
 
+        historySize = 5;
+        newHistory();
+    }
+
+    public void newHistory(){
         brushColor = 0xFF000000;
+        lastBitmap = null;
+        bitmapHistory = new Bitmap[historySize];
+        historyCounter = 0;
     }
 
     public int getImgWidth() {
@@ -66,6 +78,7 @@ public class PixelCanvas extends View {
 
     public void setBitmap(Bitmap bitmap) {
         this.bitmap = bitmap.copy(Bitmap.Config.ARGB_8888,true);
+
         invalidate();
     }
 
@@ -102,6 +115,29 @@ public class PixelCanvas extends View {
         super.draw(canvas);
     }
 
+    public void updateBitmapHistory(){
+        setNull();
+        if(historyCounter<=historySize-1){
+            bitmapHistory[historyCounter] = bitmap.copy(Bitmap.Config.ARGB_8888,true);
+            historyCounter++;
+        }else{
+            for(int i=0; i<historySize-1;i++){
+                if(bitmapHistory[i+1]!=null){
+                    bitmapHistory[i] = bitmapHistory[i+1].copy(Bitmap.Config.ARGB_8888,true);
+                }
+            }
+            bitmapHistory[historySize-1] = bitmap.copy(Bitmap.Config.ARGB_8888,true);
+        }
+    }
+
+    public void setNull(){
+        System.out.println(historyCounter);
+        for(int i=historyCounter; i<5; i++){
+            bitmapHistory[i] = null;
+        }
+        lastBitmap = null;
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int pointerCount = event.getPointerCount();
@@ -112,6 +148,8 @@ public class PixelCanvas extends View {
             event.getPointerId(0);
             switch (event.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
+                    updateBitmapHistory();
+
                     touchStartX = event.getX();
                     touchStartY = event.getY();
                     break;
@@ -129,9 +167,6 @@ public class PixelCanvas extends View {
             if (setPixel) {
                 int roundedX = (int) Math.floor(touchStartX / scale - left);
                 int roundedY = (int) Math.floor(touchStartY / scale - top);
-                System.out.println(scale);
-                System.out.println(height + " " + width);
-                System.out.println(touchStartX + " " + touchStartY);
                 if(roundedX>=0&&roundedX<imgW && roundedY>=0&&roundedY<imgH)
                 bitmap.setPixel(roundedX, roundedY, brushColor);
             }
@@ -153,6 +188,7 @@ public class PixelCanvas extends View {
         left = Math.min(0,Math.max(left,width/scale-imgW));
         top = Math.min(0,Math.max(top,height/scale-imgW));
     }
+    
     public void floodFill(int x, int y, int floodColor){
         if (x < 0 || x >= imgW || y < 0 || y >= imgH) return;
         int color = bitmap.getPixel(x,y);
