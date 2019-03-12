@@ -6,7 +6,6 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -40,61 +39,56 @@ public class MainActivity extends AppCompatActivity {
     PixelCanvas pixelCanvas;
     ImageView imageView;
     private static final int PICK_IMAGE = 100;
+    public static final int SET_COLOR = 1;
     Uri imageUri;
     ImageButton btnTool, btnPencil, btnLine, btnFloodFill, btnCut, btnRect, btnCircle, btnEraser, btnBrushColor, btnBrushSize, btnUndo, btnRedo;
     int[] brushImageId;
     HorizontalScrollView colorBar, toolBar;
     LinearLayout colorBarContainer, toolBarContainer;
+    ConstraintLayout colorPickBar;
     View coverView;
     String[] colorCodes;
-    Matrix matrix = new Matrix();
     private Resources resources;
-    int a, r, g, b;
-    SeekBar aSeekBar;
-    SeekBar rSeekBar;
-    SeekBar gSeekBar;
-    SeekBar bSeekBar;
+
+    int[] argb = new int[4];
+    SeekBar[] argbSeekBar = new SeekBar[4];
     EditText editText;
 
-    Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            imageView.setImageBitmap(Bitmap.createScaledBitmap(pixelCanvas.bitmap, 256, 256, false));
-        }
-    };
+    Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         resources = getResources();
         imageView = findViewById(R.id.imageView);
 
+        handler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                switch (msg.what){
+                    case SET_COLOR:
+                        btnBrushColor.setBackgroundColor(msg.getData().getInt("color"));
+                        break;
+                    default:
+                        imageView.setImageBitmap(Bitmap.createScaledBitmap
+                                (pixelCanvas.bitmap, 256, 256, false));
+                }
+            }
+        };
+
         pixelCanvas = findViewById(R.id.pc);
         pixelCanvas.post(new Runnable() {
             @Override
             public void run() {
-                pixelCanvas.setBitmap(Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888));
+                pixelCanvas.setBitmap(
+                        Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888));
                 pixelCanvas.getRes();
                 loadColorBar();
-                (new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        while (true) {
-                            synchronized (this) {
-                                try {
-                                    wait(100);
-                                    handler.sendEmptyMessage(0);
-                                } catch (Exception e) {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                })).start();
+                setupSeekBars();
             }
         });
+        pixelCanvas.setHandler(handler);
 
         colorBar = findViewById(R.id.colorBar);
         colorBarContainer = findViewById(R.id.colorBarContainer);
@@ -107,18 +101,30 @@ public class MainActivity extends AppCompatActivity {
                 hidePopupBar();
             }
         });
-        final ConstraintLayout colorPickBar = findViewById(R.id.colorPickBar);
+        ImageButton button = findViewById(R.id.btnColorPicker);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pixelCanvas.setMode(PixelCanvas.DRAWMODE.PICK);
+                btnTool.setImageResource(R.drawable.color_picker);
+                btnTool.setTag(R.drawable.color_picker);
+                hidePopupBar();
+            }
+        });
+        colorPickBar = findViewById(R.id.colorPickBar);
         ImageButton btnCustomColor = findViewById(R.id.btnCustomColor);
         btnCustomColor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                setupSeekBars();
                 colorPickBar.setVisibility(View.VISIBLE);
+                toolBar.setVisibility(View.GONE);
+                coverView.setVisibility(View.VISIBLE);
             }
         });
         editText = findViewById(R.id.editText);
         editText.setText(Integer.toHexString(pixelCanvas.brushColor));
 
-        setupSeekBar();
         btnTool = findViewById(R.id.btnTool);
         btnTool.setImageResource(R.drawable.pencil);
         btnTool.setTag(R.drawable.pencil);
@@ -316,6 +322,9 @@ public class MainActivity extends AppCompatActivity {
         if (toolBar.isShown()) {
             toolBar.setVisibility(View.GONE);
         }
+        if( colorPickBar.isShown()){
+            colorPickBar.setVisibility(View.GONE);
+        }
         coverView.setVisibility(View.GONE);
     }
 
@@ -338,8 +347,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     if (!pixelCanvas.eraser) {
-                        pixelCanvas.brushColor = colorCode;
-                        btnBrushColor.setBackgroundColor(colorCode);
+                        pixelCanvas.setBrushColor(colorCode);
                     }
                     hidePopupBar();
                 }
@@ -429,25 +437,20 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    private void setupSeekBar() {
+    private void setupSeekBars() {
         int hex = pixelCanvas.brushColor;
-        a = (hex & 0xFF000000) >> 24;
-        r = (hex & 0xFF0000) >> 16;
-        g = (hex & 0xFF00) >> 8;
-        b = (hex & 0xFF);
-        aSeekBar = findViewById(R.id.aSeekBar);
-        aSeekBar.setProgress(a);
-        rSeekBar = findViewById(R.id.rSeekBar);
-        rSeekBar.setProgress(r);
-        gSeekBar = findViewById(R.id.gSeekBar);
-        gSeekBar.setProgress(g);
-        bSeekBar = findViewById(R.id.bSeekBar);
-        bSeekBar.setProgress(b);
-        aSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        final int[] seekBarID ={R.id.aSeekBar,R.id.rSeekBar,R.id.gSeekBar,R.id.bSeekBar};
+        SeekBar.OnSeekBarChangeListener changeListener = new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                a = progress;
-                editText.setText(Integer.toHexString(Color.argb(a, r, g, b)));
+                StringBuilder color = new StringBuilder("#");
+                for(int i=0;i<4;i++){
+                    if(seekBar.getId()==seekBarID[i]){
+                        argb[i]=progress;
+                    }
+                    color.append(Integer.toHexString(argb[i]));
+                }
+                editText.setText(color.toString());
             }
 
             @Override
@@ -459,58 +462,14 @@ public class MainActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar seekBar) {
 
             }
-        });
-        rSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                r = progress;
-                editText.setText(Integer.toHexString(Color.argb(a, r, g, b)));
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
-        gSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                g = progress;
-                editText.setText(Integer.toHexString(Color.argb(a, r, g, b)));
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
-        bSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                b = progress;
-                editText.setText(Integer.toHexString(Color.argb(a, r, g, b)));
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
+        };
+        for(int i=0;i<4;i++){
+            int bit = 8*(3-i);
+            argb[i] = (hex>>bit)&255;
+            argbSeekBar[i]=findViewById(seekBarID[i]);
+            argbSeekBar[i].setProgress(argb[i]);
+            argbSeekBar[i].setOnSeekBarChangeListener(changeListener);
+        }
     }
 
     private void openGallery() {
@@ -567,7 +526,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void customColor(View view) {
-        pixelCanvas.brushColor = Color.argb(a,r,g,b);
-        btnBrushColor.setBackgroundColor(pixelCanvas.brushColor);
+        int i = 0;
+        pixelCanvas.setBrushColor(Color.argb(argb[i++],argb[i++],argb[i++],argb[i]));
     }
 }

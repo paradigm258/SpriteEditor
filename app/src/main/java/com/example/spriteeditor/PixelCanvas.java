@@ -4,6 +4,9 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -11,6 +14,7 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 
 public class PixelCanvas extends View {
+
 
     public enum DRAWMODE{
         PEN,
@@ -26,9 +30,11 @@ public class PixelCanvas extends View {
     Bitmap bitmap;
     Bitmap lastBitmap;
     Bitmap[] bitmapHistory;
+
     int historyCounter;
     int historySize;
     int brushSize;
+
     Bitmap bg;
     Bitmap preview;
 
@@ -60,6 +66,9 @@ public class PixelCanvas extends View {
     GestureDetector gestureDetector;
     GestureDetector shapeMove;
     OnTouchListener onTouchListener;
+
+    Handler handler;
+
     public PixelCanvas(Context context, AttributeSet attrs) {
         super(context, attrs);
         //Init touch detectors
@@ -92,12 +101,10 @@ public class PixelCanvas extends View {
 
             @Override
             public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-                boolean out = roundedX<pvLeft || roundedY<pvTop ||
-                        roundedX>pvLeft+preview.getWidth() || roundedY>pvTop+preview.getHeight();
-                if(!out){
-                    pvLeft += -distanceX / scale;
-                    pvTop += -distanceY / scale;
-                }
+                pvLeft += -distanceX / scale;
+                pvTop += -distanceY / scale;
+                pvLeft = Math.min(imgW-1,Math.max(pvLeft,-preview.getWidth()+1));
+                pvTop = Math.min(imgH-1,Math.max(pvTop,-preview.getHeight()+1));
                 return true;
             }
         });
@@ -132,7 +139,9 @@ public class PixelCanvas extends View {
                                 GraphicUlti.drawRect(preview,brushColor,brushSize);
                                 break;
                             case CIRCLE:
-                                GraphicUlti.drawCircle();
+                                GraphicUlti.drawCircle(preViewWidth/2,preViewHeight/2,
+                                        Math.min(preViewWidth/2,preViewHeight/2),
+                                        brushColor,preview,brushSize);
                                 break;
                         }
                         movable = true;
@@ -154,6 +163,7 @@ public class PixelCanvas extends View {
                 return false;
             }
         };
+
         //Init paint for canvas
         paint = new Paint();
         paint.setAntiAlias(false);
@@ -168,7 +178,22 @@ public class PixelCanvas extends View {
 
     public void setBitmap(Bitmap bitmap) {
         this.bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+        handler.sendEmptyMessage(0);
         invalidate();
+    }
+
+    public void setBrushColor(int brushColor) {
+        Message msg = handler.obtainMessage();
+        this.brushColor = brushColor;
+        msg.what = MainActivity.SET_COLOR;
+        Bundle data = new Bundle();
+        data.putInt("color",brushColor);
+        msg.setData(data);
+        handler.sendMessage(msg);
+    }
+
+    public void setHandler(Handler handler) {
+        this.handler = handler;
     }
 
     public void getRes() {
@@ -256,7 +281,6 @@ public class PixelCanvas extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-
         int pointerCount = event.getPointerCount();
         if (pointerCount > 1) {
             dragAndScale(event);
@@ -294,6 +318,7 @@ public class PixelCanvas extends View {
         }
         performClick();
         invalidate();
+        handler.sendEmptyMessage(0);
         return true;
     }
 
@@ -310,7 +335,7 @@ public class PixelCanvas extends View {
     }
 
     private void pickColor(){
-        brushColor = bitmap.getPixel(roundedX,roundedY);
+        setBrushColor(bitmap.getPixel(roundedX,roundedY));
     }
 
 }
