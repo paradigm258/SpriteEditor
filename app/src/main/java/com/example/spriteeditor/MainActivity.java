@@ -6,6 +6,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -43,19 +44,19 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout colorBarContainer, toolBarContainer;
     View coverView;
     String[] colorCodes;
+    Matrix matrix = new Matrix();
     private Resources resources;
 
     Handler handler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
-            imageView.setImageBitmap(pixelCanvas.bitmap);
+            imageView.setImageBitmap(Bitmap.createScaledBitmap(pixelCanvas.bitmap,256,256,false));
         }
     };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         resources = getResources();
         imageView = findViewById(R.id.imageView);
 
