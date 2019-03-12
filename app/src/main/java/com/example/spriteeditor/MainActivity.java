@@ -7,18 +7,21 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore;
 import android.support.v4.graphics.ColorUtils;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -31,6 +34,7 @@ import java.io.InputStream;
 
 public class MainActivity extends AppCompatActivity {
     PixelCanvas pixelCanvas;
+    ImageView imageView;
     private static final int PICK_IMAGE = 100;
     Uri imageUri;
     ImageButton btnTool, btnPencil, btnLine, btnFloodFill, btnCut, btnRect, btnEraser, btnBrushColor, btnBrushSize, btnUndo, btnRedo;
@@ -41,13 +45,19 @@ public class MainActivity extends AppCompatActivity {
     String[] colorCodes;
     private Resources resources;
 
+    Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            imageView.setImageBitmap(pixelCanvas.bitmap);
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         resources = getResources();
-
+        imageView = findViewById(R.id.imageView);
 
         pixelCanvas = findViewById(R.id.pc);
         pixelCanvas.post(new Runnable() {
@@ -56,6 +66,21 @@ public class MainActivity extends AppCompatActivity {
                 pixelCanvas.setBitmap(Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888));
                 pixelCanvas.getRes();
                 loadColorBar();
+                (new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        while (true){
+                            synchronized (this){
+                                try {
+                                    wait(100);
+                                    handler.sendEmptyMessage(0);
+                                }catch (Exception e){
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                })).start();
             }
         });
 
@@ -237,7 +262,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
-
     public void hidePopupBar(){
         if(colorBar.isShown()){
             colorBar.setVisibility(View.GONE);
