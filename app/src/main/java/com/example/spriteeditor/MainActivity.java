@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
     ImageView imageView;
     private static final int PICK_IMAGE = 100;
     Uri imageUri;
-    ImageButton btnTool, btnPencil, btnLine, btnFloodFill, btnCut, btnRect, btnEraser, btnBrushColor, btnBrushSize, btnUndo, btnRedo;
+    ImageButton btnTool, btnPencil, btnLine, btnFloodFill, btnCut, btnRect, btnCircle, btnEraser, btnBrushColor, btnBrushSize, btnUndo, btnRedo;
     int[] brushImageId;
     HorizontalScrollView colorBar, toolBar;
     LinearLayout colorBarContainer, toolBarContainer;
@@ -172,6 +172,19 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        btnCircle = findViewById(R.id.btnCircle);
+        btnCircle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!pixelCanvas.eraser){
+                    pixelCanvas.mode = PixelCanvas.DRAWMODE.CIRCLE;
+                }
+                btnTool.setImageResource(R.drawable.circle);
+                btnTool.setTag(R.drawable.circle);
+                hidePopupBar();
+            }
+        });
+
         btnEraser = findViewById(R.id.btnEraser);
         btnEraser.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -186,6 +199,16 @@ public class MainActivity extends AppCompatActivity {
                         case R.drawable.line:
                             pixelCanvas.mode = PixelCanvas.DRAWMODE.LINE;
                             break;
+                        case R.drawable.flood_fill:
+                            pixelCanvas.mode = PixelCanvas.DRAWMODE.FILL;
+                            break;
+                        case R.drawable.cut:
+                            pixelCanvas.mode = PixelCanvas.DRAWMODE.CUT;
+                            break;
+                        case R.drawable.rect:
+                            pixelCanvas.mode = PixelCanvas.DRAWMODE.RECT;
+                            break;
+
                     }
                     pixelCanvas.brushColor = ColorUtils.setAlphaComponent(pixelCanvas.brushColor, 255);
                     btnEraser.setBackgroundColor(0x00000000);
