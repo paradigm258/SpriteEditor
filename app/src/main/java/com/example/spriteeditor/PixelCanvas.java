@@ -18,7 +18,8 @@ public class PixelCanvas extends View {
         RECT,
         CUT,
         MOVE,
-        FILL
+        FILL,
+        CIRCLE
     }
 
     Bitmap bitmap;
@@ -51,7 +52,8 @@ public class PixelCanvas extends View {
     int imgH;
     int brushColor;
 
-    public DRAWMODE mode = DRAWMODE.PEN;
+    public DRAWMODE mode = DRAWMODE.CUT;
+    DRAWMODE preMode;
 
     ScaleGestureDetector sgd;
     GestureDetector gestureDetector;
@@ -77,25 +79,24 @@ public class PixelCanvas extends View {
             }
         });
         shapeMove = new GestureDetector(this.getContext(),new GestureDetector.SimpleOnGestureListener(){
+
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
-                int roundedX = (int) Math.floor(e.getX() / scale - left);
-                int roundedY = (int) Math.floor(e.getY() / scale - top);
-                boolean out = roundedX<pvLeft || roundedY<pvTop ||
-                        roundedX>pvLeft+preview.getWidth() || roundedY>pvTop+preview.getHeight();
-                if(out){
-                    mode = DRAWMODE.LINE;
-                    movable = false;
-                    drawShape();
-                    invalidate();
-                }
+                mode = preMode;
+                movable = false;
+                drawShape();
+                invalidate();
                 return true;
             }
 
             @Override
             public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-                pvLeft += -distanceX / scale;
-                pvTop += -distanceY / scale;
+                boolean out = roundedX<pvLeft || roundedY<pvTop ||
+                        roundedX>pvLeft+preview.getWidth() || roundedY>pvTop+preview.getHeight();
+                if(!out){
+                    pvLeft += -distanceX / scale;
+                    pvTop += -distanceY / scale;
+                }
                 return true;
             }
         });
@@ -110,32 +111,24 @@ public class PixelCanvas extends View {
         newHistory();
     }
 
-    public int getImgWidth() {
-        return bitmap.getWidth();
-    }
-
-    public int getImgHeight() {
-        return bitmap.getHeight();
-    }
-
     public void setBitmap(Bitmap bitmap) {
         this.bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
         invalidate();
     }
 
     public void getRes() {
-
         //Adjust for image resolution
         width = getWidth();
         height = getHeight();
-        imgW = getImgWidth();
-        imgH = getImgHeight();
-        float scaleX = (float) getWidth() / (float) getImgWidth();
-        float scaleY = (float) getHeight() / (float) getImgHeight();
+        imgW = bitmap.getWidth();
+        imgH = bitmap.getHeight();
+        float scaleX = (float) getWidth() / (float) imgW;
+        float scaleY = (float) getHeight() / (float) imgH;
         minScale = Math.min(scaleX, scaleY);
         scale = minScale;
-        left =0;
-        top =0;
+        left = 0;
+        top = 0;
+        movable = false;
         //Init background
         bg = Bitmap.createBitmap(imgW, imgH, Bitmap.Config.ARGB_8888);
         for (int x = 0; x < bg.getWidth(); x++) {
@@ -160,14 +153,14 @@ public class PixelCanvas extends View {
         }
         if (preview !=null && movable) {
             //Draw preview
-            canvas.drawBitmap(preview, (int)(pvLeft + left), (int)(pvTop + top), paint);
+            canvas.drawBitmap(preview, (int)(pvLeft) + left, (int)(pvTop)+ top, paint);
             //Draw outline
             Paint pvPaint = new Paint(paint);
             pvPaint.setColor(0xFF0000FF);
             pvPaint.setStyle(Paint.Style.STROKE);
             pvPaint.setStrokeWidth(1 / scale * 5);
-            canvas.drawRect((int)(pvLeft + left), (int)(pvTop + top),
-                    (int)(pvLeft + left) + preview.getWidth(), (int)(pvTop + top) + preview.getHeight(), pvPaint);
+            canvas.drawRect((int)(pvLeft) + left, (int)(pvTop) + top,
+                    (int)(pvLeft) + left + preview.getWidth(), (int)(pvTop) + top + preview.getHeight(), pvPaint);
         }
         super.draw(canvas);
     }
@@ -197,42 +190,37 @@ public class PixelCanvas extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+
         int pointerCount = event.getPointerCount();
         if (pointerCount > 1) {
             dragAndScale(event);
         } else {
-            event.getPointerId(0);
-            switch (event.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                    updateBitmapHistory();
-                default:
-                    break;
-            }
 
             float x = event.getX();
             float y = event.getY();
-
             roundedX = (int) Math.floor(x / scale - left);
             roundedY = (int) Math.floor(y / scale - top);
-
-            switch (mode){
-                case PEN:
-                    System.out.println(scale);
-                    System.out.println(height + " " + width);
-                    //System.out.println(touchStartX + " " + touchStartY);
-                    drawPixel(roundedX,roundedY);
-                    break;
-                case MOVE:
-                    shapeMove.onTouchEvent(event);
-                    break;
-                case FILL:
-                    floodFill(roundedX,roundedY,bitmap.getPixel(roundedX,roundedY));
-                    break;
-                default:
-                    makeShape(event);
-                    movable = true;
+            if(mode == DRAWMODE.MOVE){
+                shapeMove.onTouchEvent(event);
+            }else {
+                if(event.getActionMasked()==MotionEvent.ACTION_DOWN)updateBitmapHistory();
+                switch (mode) {
+                    case PEN:
+                        System.out.println(scale);
+                        System.out.println(height + " " + width);
+                        //System.out.println(touchStartX + " " + touchStartY);
+                        drawPixel(roundedX, roundedY,brushColor);
+                        break;
+                    case FILL:
+                        floodFill(roundedX, roundedY, bitmap.getPixel(roundedX, roundedY));
+                        break;
+                    case CUT:
+                    case LINE:
+                    case RECT:
+                        makeShape(event);
+                        break;
+                }
             }
-
         }
         performClick();
         invalidate();
@@ -273,10 +261,24 @@ public class PixelCanvas extends View {
                     case RECT:
                         drawRect();
                         break;
+                    case CIRCLE:
+                        drawCircle();
+                        break;
                 }
+                movable = true;
                 break;
             case MotionEvent.ACTION_UP:
-                mode = DRAWMODE.MOVE;
+                if(movable) {
+                    if(mode == DRAWMODE.CUT){
+                        for(int x=0;x<preview.getWidth();x++){
+                            for(int y=0;y<preview.getHeight();y++){
+                                bitmap.setPixel((int)pvLeft+x,(int)pvTop+y,0);
+                            }
+                        }
+                    }
+                    preMode = mode;
+                    mode = DRAWMODE.MOVE;
+                }
                 break;
         }
     }
@@ -288,7 +290,7 @@ public class PixelCanvas extends View {
                 if(pixel!=0){
                     int bX = (int)(x+pvLeft);
                     int bY = (int)(y+pvTop);
-                    drawPixel(bX,bY);
+                    drawPixel(bX,bY,pixel);
                 }
             }
         }
@@ -361,8 +363,9 @@ public class PixelCanvas extends View {
 
     private void floodFill(int x, int y, int floodColor) {
         if (x < 0 || x >= imgW || y < 0 || y >= imgH) return;
-        int color = bitmap.getPixel(x, y);
-        if (color != floodColor) return;
+        int color  = bitmap.getPixel(x, y);
+        if( color == brushColor ) return;
+        if( color != floodColor) return;
         bitmap.setPixel(x, y, brushColor);
         floodFill(x + 1, y, color);
         floodFill(x, y + 1, color);
@@ -370,8 +373,11 @@ public class PixelCanvas extends View {
         floodFill(x, y - 1, color);
     }
 
-    private void drawPixel(int x, int y){
+    private void drawCircle(){
+
+    }
+    private void drawPixel(int x, int y,int color){
         if (x >= 0 && x < imgW && y >= 0 && y < imgH)
-            bitmap.setPixel(x, y, brushColor);
+            bitmap.setPixel(x, y, color);
     }
 }
