@@ -9,6 +9,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.v4.graphics.ColorUtils;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -16,12 +17,9 @@ import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewParent;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.Space;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
@@ -35,10 +33,10 @@ public class MainActivity extends AppCompatActivity {
     PixelCanvas pixelCanvas;
     private static final int PICK_IMAGE = 100;
     Uri imageUri;
-    ImageButton btnPencil, btnEraser, btnColorPicker, btnBrushSize, btnUndo, btnRedo;
+    ImageButton btnTool, btnPencil, btnLine, btnFloodFill, btnCut, btnRect, btnEraser, btnBrushColor, btnBrushSize, btnUndo, btnRedo;
     int[] brushImageId;
-    HorizontalScrollView colorBar;
-    LinearLayout colorBarContainer;
+    HorizontalScrollView colorBar, toolBar;
+    LinearLayout colorBarContainer, toolBarContainer;
     View coverView;
     String[] colorCodes;
     private Resources resources;
@@ -63,6 +61,8 @@ public class MainActivity extends AppCompatActivity {
 
         colorBar = findViewById(R.id.colorBar);
         colorBarContainer = findViewById(R.id.colorBarContainer);
+        toolBar = findViewById(R.id.toolBar);
+        toolBarContainer = findViewById(R.id.toolBarContainer);
         coverView = findViewById(R.id.coverView);
         coverView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -71,12 +71,79 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        btnTool = findViewById(R.id.btnTool);
+        btnTool.setImageResource(R.drawable.pencil);
+        btnTool.setTag(R.drawable.pencil);
+        btnTool.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toolBar.setVisibility(View.VISIBLE);
+                coverView.setVisibility(View.VISIBLE);
+            }
+        });
+
         btnPencil = findViewById(R.id.btnPencil);
         btnPencil.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                pixelCanvas.brushColor = 0xFF000000;
-                btnColorPicker.setBackgroundColor(0xFF000000);
+                if(!pixelCanvas.eraser){
+                    pixelCanvas.mode = PixelCanvas.DRAWMODE.PEN;
+                }
+                btnTool.setImageResource(R.drawable.pencil);
+                btnTool.setTag(R.drawable.pencil);
+                hidePopupBar();
+            }
+        });
+
+        btnLine = findViewById(R.id.btnLine);
+        btnLine.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!pixelCanvas.eraser){
+                    pixelCanvas.mode = PixelCanvas.DRAWMODE.LINE;
+                }
+                btnTool.setImageResource(R.drawable.line);
+                btnTool.setTag(R.drawable.line);
+                hidePopupBar();
+            }
+        });
+
+        btnFloodFill = findViewById(R.id.btnFloodFill);
+        btnFloodFill.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!pixelCanvas.eraser){
+                    pixelCanvas.mode = PixelCanvas.DRAWMODE.FILL;
+                }
+                btnTool.setImageResource(R.drawable.flood_fill);
+                btnTool.setTag(R.drawable.flood_fill);
+                hidePopupBar();
+            }
+        });
+
+        btnCut = findViewById(R.id.btnCut);
+        btnCut.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!pixelCanvas.eraser){
+                    pixelCanvas.mode = PixelCanvas.DRAWMODE.CUT;
+                }
+                btnTool.setImageResource(R.drawable.cut);
+                btnTool.setTag(R.drawable.cut);
+                hidePopupBar();
+            }
+        });
+
+        btnRect = findViewById(R.id.btnRect);
+        btnRect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!pixelCanvas.eraser){
+                    pixelCanvas.mode = PixelCanvas.DRAWMODE.RECT;
+                }
+                btnTool.setImageResource(R.drawable.rect);
+                btnTool.setTag(R.drawable.rect);
+                hidePopupBar();
             }
         });
 
@@ -84,13 +151,32 @@ public class MainActivity extends AppCompatActivity {
         btnEraser.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                pixelCanvas.brushColor = 0x00000000;
+                if(pixelCanvas.eraser){
+                    pixelCanvas.eraser = false;
+                    Integer drawableId = (Integer)btnTool.getTag();
+                    switch (drawableId){
+                        case R.drawable.pencil:
+                            pixelCanvas.mode = PixelCanvas.DRAWMODE.PEN;
+                            break;
+                        case R.drawable.line:
+                            pixelCanvas.mode = PixelCanvas.DRAWMODE.LINE;
+                            break;
+                    }
+                    pixelCanvas.brushColor = ColorUtils.setAlphaComponent(pixelCanvas.brushColor, 255);
+                    btnEraser.setBackgroundColor(0x00000000);
+
+                }else{
+                    pixelCanvas.eraser = true;
+                    pixelCanvas.mode = PixelCanvas.DRAWMODE.PEN;
+                    pixelCanvas.brushColor = ColorUtils.setAlphaComponent(pixelCanvas.brushColor, 0);
+                    btnEraser.setBackgroundColor(0xFF9E9E9E);
+                }
             }
         });
 
-        btnColorPicker = findViewById(R.id.btnColorPicker);
-        btnColorPicker.setBackgroundColor(0xFF000000);
-        btnColorPicker.setOnClickListener(new View.OnClickListener() {
+        btnBrushColor = findViewById(R.id.btnBrushColor);
+        btnBrushColor.setBackgroundColor(0xFF000000);
+        btnBrushColor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 colorBar.setVisibility(View.VISIBLE);
@@ -141,7 +227,12 @@ public class MainActivity extends AppCompatActivity {
         btnBrushSize.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                if(pixelCanvas.brushSize>=2){
+                    pixelCanvas.brushSize = 0;
+                    btnBrushSize.setImageResource(brushImageId[pixelCanvas.brushSize]);
+                }else{
+                    btnBrushSize.setImageResource(brushImageId[++pixelCanvas.brushSize]);
+                }
             }
         });
 
@@ -150,6 +241,9 @@ public class MainActivity extends AppCompatActivity {
     public void hidePopupBar(){
         if(colorBar.isShown()){
             colorBar.setVisibility(View.GONE);
+        }
+        if(toolBar.isShown()){
+            toolBar.setVisibility(View.GONE);
         }
         coverView.setVisibility(View.GONE);
     }
@@ -173,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     pixelCanvas.brushColor = colorCode;
-                    btnColorPicker.setBackgroundColor(colorCode);
+                    btnBrushColor.setBackgroundColor(colorCode);
                     hidePopupBar();
                 }
             });
@@ -248,7 +342,7 @@ public class MainActivity extends AppCompatActivity {
                 pixelCanvas.setBitmap(newBitmap);
                 pixelCanvas.getRes();
                 pixelCanvas.newHistory();
-                btnColorPicker.setBackgroundColor(pixelCanvas.brushColor);
+                btnBrushColor.setBackgroundColor(pixelCanvas.brushColor);
                 dialog.dismiss();
             }
         });

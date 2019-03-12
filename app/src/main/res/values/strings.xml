@@ -4,5 +4,6 @@
     <string-array name="canvasSizes">
         <item>32</item>
         <item>64</item>
+        <item>128</item>
     </string-array>
 </resources>

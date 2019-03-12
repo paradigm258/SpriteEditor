@@ -26,6 +26,7 @@ public class PixelCanvas extends View {
     Bitmap[] bitmapHistory;
     int historyCounter;
     int historySize;
+    int brushSize;
     Bitmap bg;
     Bitmap preview;
 
@@ -50,6 +51,7 @@ public class PixelCanvas extends View {
     int imgW;
     int imgH;
     int brushColor;
+    boolean eraser;
 
     public DRAWMODE mode = DRAWMODE.PEN;
 
@@ -107,6 +109,7 @@ public class PixelCanvas extends View {
 
         brushColor = 0xFF000000;
         historySize = 5;
+        brushSize = 0;
         newHistory();
     }
 
@@ -146,6 +149,7 @@ public class PixelCanvas extends View {
     }
 
     public void newHistory(){
+        eraser = false;
         lastBitmap = null;
         bitmapHistory = new Bitmap[historySize];
         historyCounter = 0;
@@ -188,7 +192,6 @@ public class PixelCanvas extends View {
     }
 
     public void setNull(){
-        System.out.println(historyCounter);
         for(int i=historyCounter; i<5; i++){
             bitmapHistory[i] = null;
         }
@@ -217,9 +220,6 @@ public class PixelCanvas extends View {
 
             switch (mode){
                 case PEN:
-                    System.out.println(scale);
-                    System.out.println(height + " " + width);
-                    //System.out.println(touchStartX + " " + touchStartY);
                     drawPixel(roundedX,roundedY);
                     break;
                 case MOVE:
