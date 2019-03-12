@@ -75,16 +75,16 @@ final class GraphicUlti {
         }
     }
 
-    private void floodFill(int x, int y, int floodColor, Bitmap bitmap, int brushColor) {
-//        if (x < 0 || x >= bitmap.getWidth() || y < 0 || y >= bitmap.getHeight()) return;
-//        int color  = bitmap.getPixel(x, y);
-//        if( color == brushColor ) return;
-//        if( color != floodColor) return;
-//        bitmap.setPixel(x, y, brushColor);
-//        floodFill(x + 1, y, color);
-//        floodFill(x, y + 1, color);
-//        floodFill(x - 1, y, color);
-//        floodFill(x, y - 1, color);
+    public static void floodFill(int x, int y, int floodColor, Bitmap bitmap, int brushColor) {
+        if (x < 0 || x >= bitmap.getWidth() || y < 0 || y >= bitmap.getHeight()) return;
+        int color  = bitmap.getPixel(x, y);
+        if( color == brushColor ) return;
+        if( color != floodColor) return;
+        bitmap.setPixel(x, y, brushColor);
+        floodFill(x + 1, y, color,bitmap,brushColor);
+        floodFill(x, y + 1, color,bitmap,brushColor);
+        floodFill(x - 1, y, color,bitmap,brushColor);
+        floodFill(x, y - 1, color,bitmap,brushColor);
     }
 
     static void drawCircle(){
@@ -92,13 +92,17 @@ final class GraphicUlti {
     }
 
     static void drawPoint(int x, int y, int color,Bitmap bitmap,int size){
+        if(size == 0){
+            drawPixel(x,y,color,bitmap);
+        }else
         for(int i=-1;i<size;i++){
             for (int j=-1;j<size;j++){
                 drawPixel(x+i,y+j,color,bitmap);
             }
         }
+
     }
-    static void drawPixel(int x, int y, int color, Bitmap bitmap){
+    private static void drawPixel(int x, int y, int color, Bitmap bitmap){
         if (x >= 0 && x < bitmap.getWidth() && y >= 0 && y < bitmap.getHeight())
             bitmap.setPixel(x, y, color);
     }
