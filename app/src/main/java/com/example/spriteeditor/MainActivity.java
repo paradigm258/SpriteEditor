@@ -43,7 +43,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int PICK_IMAGE = 100;
     public static final int SET_COLOR = 1;
     Uri imageUri;
-    ImageButton btnTool, btnPencil, btnLine, btnFloodFill, btnCut, btnRect, btnCircle, btnEraser, btnBrushColor, btnBrushSize, btnUndo, btnRedo;
+    ImageButton btnTool, btnPencil, btnLine, btnFloodFill, btnCut,
+            btnColorPicker, btnCustomColor, btnRect, btnCircle,
+            btnEraser, btnBrushColor, btnBrushSize, btnUndo, btnRedo;
     int[] brushImageId;
     HorizontalScrollView colorBar, toolBar;
     LinearLayout colorBarContainer, toolBarContainer;
@@ -103,8 +105,8 @@ public class MainActivity extends AppCompatActivity {
                 hidePopupBar();
             }
         });
-        ImageButton button = findViewById(R.id.btnColorPicker);
-        button.setOnClickListener(new View.OnClickListener() {
+        btnColorPicker = findViewById(R.id.btnColorPicker);
+        btnColorPicker.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 pixelCanvas.setMode(PixelCanvas.DRAWMODE.PICK);
@@ -114,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         colorPickBar = findViewById(R.id.colorPickBar);
-        ImageButton btnCustomColor = findViewById(R.id.btnCustomColor);
+        btnCustomColor = findViewById(R.id.btnCustomColor);
         btnCustomColor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -133,6 +135,7 @@ public class MainActivity extends AppCompatActivity {
         btnTool.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                hidePopupBar();
                 toolBar.setVisibility(View.VISIBLE);
                 coverView.setVisibility(View.VISIBLE);
             }
@@ -208,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (!pixelCanvas.eraser) {
-                    pixelCanvas.mode = PixelCanvas.DRAWMODE.CIRCLE;
+                    pixelCanvas.setMode(PixelCanvas.DRAWMODE.CIRCLE);
                 }
                 btnTool.setImageResource(R.drawable.circle);
                 btnTool.setTag(R.drawable.circle);
@@ -231,14 +234,21 @@ public class MainActivity extends AppCompatActivity {
                             pixelCanvas.setMode(PixelCanvas.DRAWMODE.LINE);
                             break;
                         case R.drawable.flood_fill:
-                            pixelCanvas.mode = PixelCanvas.DRAWMODE.FILL;
+                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.FILL);
                             break;
                         case R.drawable.cut:
-                            pixelCanvas.mode = PixelCanvas.DRAWMODE.CUT;
+                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.CUT);
                             break;
                         case R.drawable.rect:
-                            pixelCanvas.mode = PixelCanvas.DRAWMODE.RECT;
+                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.RECT);
                             break;
+                        case R.drawable.circle:
+                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.CIRCLE);
+                            break;
+                            default:
+                                pixelCanvas.setMode(PixelCanvas.DRAWMODE.PEN);
+                                break;
+
                     }
                     pixelCanvas.brushColor = ColorUtils.setAlphaComponent(pixelCanvas.brushColor, 255);
                     btnEraser.setBackgroundColor(0x00000000);
@@ -257,6 +267,7 @@ public class MainActivity extends AppCompatActivity {
         btnBrushColor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                hidePopupBar();
                 colorBar.setVisibility(View.VISIBLE);
                 coverView.setVisibility(View.VISIBLE);
             }
