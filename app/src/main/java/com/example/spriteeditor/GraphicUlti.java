@@ -89,28 +89,27 @@ final class GraphicUlti {
             Point n = queue.remove();
             boolean outOfBound = n.x < 0 || n.x >= width || n.y < 0 || n.y >= height;
             if (!outOfBound && !visit[n.x][n.y] && bitmap.getPixel(n.x, n.y) == floodColor) {
-                visit[x][y] = true;
+                visit[n.x][n.y] = true;
                 bitmap.setPixel(n.x, n.y, brushColor);
                 queue.add(new Point(n.x - 1, n.y));
-                queue.add(new Point(n.x + 1, n.y));
                 queue.add(new Point(n.x, n.y + 1));
+                queue.add(new Point(n.x + 1, n.y));
                 queue.add(new Point(n.x, n.y - 1));
             }
         }
     }
 
-    private static int getIndex(int x, int y, int width) {
-        return y * width + x;
-    }
-
-    static void drawCircle(int x0, int y0, int radius, int brushColor, Bitmap bitmap, int size) {
+    static void drawCircle(int brushColor, Bitmap bitmap, int size) {
+        int radius = bitmap.getWidth()/2+1;
+        int x0 = radius-1;
+        int y0 = radius-1;
 
         int x = radius - 1;
         int y = 0;
         int dx = 1;
         int dy = 1;
         int err = dx - (radius*2);
-
+        drawPoint(x0,y0,brushColor,bitmap,size);
         while (x >= y) {
             drawPoint(x0 + x, y0 + y, brushColor, bitmap, size);
             drawPoint(x0 + y, y0 + x, brushColor, bitmap, size);

@@ -3,7 +3,6 @@ package com.example.spriteeditor;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Handler;
@@ -122,9 +121,16 @@ public class PixelCanvas extends View {
                     case MotionEvent.ACTION_MOVE:
                         int preViewWidth = Math.abs(shapeStartX - roundedX) + 1 ;
                         int preViewHeight = Math.abs(shapeStartY - roundedY) + 1 ;
-                        preview = Bitmap.createBitmap(preViewWidth, preViewHeight, Bitmap.Config.ARGB_8888);
                         pvLeft = Math.min(shapeStartX, roundedX);
                         pvTop = Math.min(shapeStartY, roundedY);
+                        if(mode == DRAWMODE.CIRCLE){
+                            int diameter = 2*Math.min(preViewWidth,preViewHeight)+1;
+                            preview = Bitmap.createBitmap(diameter,diameter,Bitmap.Config.ARGB_8888);
+                            pvLeft -=diameter/2;
+                            pvTop -=diameter/2;
+                        }else {
+                            preview = Bitmap.createBitmap(preViewWidth, preViewHeight, Bitmap.Config.ARGB_8888);
+                        }
                         switch (mode) {
                             case CUT:
                                 GraphicUlti.drawCut((int)pvTop,(int)pvLeft,bitmap,preview);
@@ -140,9 +146,7 @@ public class PixelCanvas extends View {
                                 GraphicUlti.drawRect(preview,brushColor,brushSize);
                                 break;
                             case CIRCLE:
-                                GraphicUlti.drawCircle(preViewWidth/2,preViewHeight/2,
-                                        Math.min(preViewWidth/2,preViewHeight/2),
-                                        brushColor,preview,brushSize);
+                                GraphicUlti.drawCircle(brushColor,preview,brushSize);
                                 break;
                         }
                         movable = true;

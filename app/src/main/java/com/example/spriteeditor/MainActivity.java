@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
         handler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
-                switch (msg.what){
+                switch (msg.what) {
                     case SET_COLOR:
                         btnBrushColor.setBackgroundColor(msg.getData().getInt("color"));
                         break;
@@ -118,9 +118,9 @@ public class MainActivity extends AppCompatActivity {
         btnCustomColor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                setupSeekBars();
+                hidePopupBar();
+                setSeekBarValues();
                 colorPickBar.setVisibility(View.VISIBLE);
-                toolBar.setVisibility(View.GONE);
                 coverView.setVisibility(View.VISIBLE);
             }
         });
@@ -207,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
         btnCircle.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!pixelCanvas.eraser){
+                if (!pixelCanvas.eraser) {
                     pixelCanvas.mode = PixelCanvas.DRAWMODE.CIRCLE;
                 }
                 btnTool.setImageResource(R.drawable.circle);
@@ -323,7 +323,7 @@ public class MainActivity extends AppCompatActivity {
         if (toolBar.isShown()) {
             toolBar.setVisibility(View.GONE);
         }
-        if( colorPickBar.isShown()){
+        if (colorPickBar.isShown()) {
             colorPickBar.setVisibility(View.GONE);
         }
         coverView.setVisibility(View.GONE);
@@ -443,17 +443,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupSeekBars() {
-        int hex = pixelCanvas.brushColor;
-        final int[] seekBarID ={R.id.aSeekBar,R.id.rSeekBar,R.id.gSeekBar,R.id.bSeekBar};
+        final int[] seekBarID = {R.id.aSeekBar, R.id.rSeekBar, R.id.gSeekBar, R.id.bSeekBar};
         SeekBar.OnSeekBarChangeListener changeListener = new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 StringBuilder color = new StringBuilder("#");
-                for(int i=0;i<4;i++){
-                    if(seekBar.getId()==seekBarID[i]){
-                        argb[i]=progress;
+                for (int i = 0; i < 4; i++) {
+                    if (seekBar.getId() == seekBarID[i]) {
+                        argb[i] = progress;
                     }
-                    color.append(Integer.toHexString(argb[i]));
+                    color.append(String.format("%02X", argb[i]));
                 }
                 editText.setText(color.toString());
             }
@@ -468,12 +467,19 @@ public class MainActivity extends AppCompatActivity {
 
             }
         };
-        for(int i=0;i<4;i++){
-            int bit = 8*(3-i);
-            argb[i] = (hex>>bit)&255;
-            argbSeekBar[i]=findViewById(seekBarID[i]);
-            argbSeekBar[i].setProgress(argb[i]);
+        for (int i = 0; i < 4; i++) {
+            argbSeekBar[i] = findViewById(seekBarID[i]);
             argbSeekBar[i].setOnSeekBarChangeListener(changeListener);
+        }
+        setSeekBarValues();
+    }
+
+    private void setSeekBarValues() {
+        int hex = pixelCanvas.brushColor;
+        for (int i = 0; i < 4; i++) {
+            int bit = 8 * (3 - i);
+            argb[i] = (hex >> bit) & 255;
+            argbSeekBar[i].setProgress(argb[i]);
         }
     }
 
@@ -628,6 +634,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void customColor(View view) {
         int i = 0;
-        pixelCanvas.setBrushColor(Color.argb(argb[i++],argb[i++],argb[i++],argb[i]));
+        pixelCanvas.setBrushColor(Color.argb(argb[i++], argb[i++], argb[i++], argb[i]));
     }
 }
