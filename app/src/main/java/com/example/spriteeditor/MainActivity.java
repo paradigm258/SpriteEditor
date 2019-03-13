@@ -522,10 +522,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private String saveImageToGallery() {
-        File directory = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DCIM).getAbsolutePath() + "/Sprites");
-        if (!directory.exists())
+
     String imageName;
 
 
@@ -558,7 +555,7 @@ public class MainActivity extends AppCompatActivity {
         return directory;
     }
 
-        File imagePath = new File(directory, "profile.jpg");
+
     private void openSpriteNameDialog(final File directory){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Sprite Name");

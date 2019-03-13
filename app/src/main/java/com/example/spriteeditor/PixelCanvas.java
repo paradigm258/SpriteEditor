@@ -60,7 +60,7 @@ public class PixelCanvas extends View {
     int brushColor;
     boolean eraser;
 
-    public DRAWMODE mode = DRAWMODE.CUT;
+    public DRAWMODE mode = DRAWMODE.PEN;
     DRAWMODE preMode;
 
     ScaleGestureDetector sgd;
