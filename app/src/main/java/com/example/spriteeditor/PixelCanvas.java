@@ -3,6 +3,7 @@ package com.example.spriteeditor;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
@@ -198,13 +199,6 @@ public class PixelCanvas extends View {
         if (pointerCount > 1) {
             dragAndScale(event);
         } else {
-            event.getPointerId(0);
-            switch (event.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                    updateBitmapHistory();
-                default:
-                    break;
-            }
 
             float x = event.getX();
             float y = event.getY();
@@ -216,9 +210,6 @@ public class PixelCanvas extends View {
                 if(event.getActionMasked()==MotionEvent.ACTION_DOWN)updateBitmapHistory();
                 switch (mode) {
                     case PEN:
-                        System.out.println(scale);
-                        System.out.println(height + " " + width);
-                        //System.out.println(touchStartX + " " + touchStartY);
                         drawPixel(roundedX, roundedY,brushColor);
                         break;
                     case FILL:

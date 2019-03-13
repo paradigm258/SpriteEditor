@@ -3,6 +3,7 @@ package com.example.spriteeditor;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -16,10 +17,12 @@ import android.provider.MediaStore;
 import android.support.v4.graphics.ColorUtils;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.text.InputType;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -209,7 +212,6 @@ public class MainActivity extends AppCompatActivity {
                         case R.drawable.rect:
                             pixelCanvas.mode = PixelCanvas.DRAWMODE.RECT;
                             break;
-
                     }
                     pixelCanvas.brushColor = ColorUtils.setAlphaComponent(pixelCanvas.brushColor, 255);
                     btnEraser.setBackgroundColor(0x00000000);
@@ -364,14 +366,18 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         switch (id){
+            case R.id.newSprite:
+                newCanvas();
+                break;
+            case R.id.saveDraft:
+                saveImageToGallery("Draft");
+                break;
             case R.id.importPicture:
                 openGallery();
                 break;
             case R.id.exportPicture:
-                saveImageToGallery();
+                saveImageToGallery("");
                 break;
-            case R.id.newSprite:
-                newCanvas();
                 default:
                     break;
         }
@@ -419,6 +425,29 @@ public class MainActivity extends AppCompatActivity {
                 Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
                 pixelCanvas.setBitmap(selectedImage);
                 pixelCanvas.getRes();
+                pixelCanvas.newHistory();
+
+                String fileName = "";
+                if (imageUri.getScheme().equals("file")) {
+                    fileName = imageUri.getLastPathSegment();
+                } else {
+                    Cursor cursor = null;
+                    try {
+                        cursor = getContentResolver().query(imageUri, new String[]{
+                                MediaStore.Images.ImageColumns.DISPLAY_NAME
+                        }, null, null, null);
+
+                        if (cursor != null && cursor.moveToFirst()) {
+                            fileName = cursor.getString(cursor.getColumnIndex(MediaStore.Images.ImageColumns.DISPLAY_NAME));
+                        }
+                    } finally {
+                        if (cursor != null) {
+                            cursor.close();
+                        }
+                    }
+                }
+                System.out.println(fileName);
+                getSupportActionBar().setTitle(fileName);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
                 Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
@@ -426,24 +455,86 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private String saveImageToGallery(){
-        File directory = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DCIM).getAbsolutePath() + "/Sprites");
-        if (!directory.exists())
+    String imageName;
+
+
+    private String saveImageToGallery(String subFolder){
+        File directory = createDirectory(subFolder);
+        if(!getSupportActionBar().getTitle().toString().equals("PixarT")&&
+                subFolder.endsWith("Draft")){
+            imageName = getSupportActionBar().getTitle().toString().trim();
+            saveFile(directory);
+        }else{
+            openSpriteNameDialog(directory);
+        }
+
+        return directory.getAbsolutePath();
+    }
+
+    private File createDirectory(String subFolder){
+        String directoryPath = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DCIM).getAbsolutePath() + "/Sprites";
+        if(!(subFolder.isEmpty()||subFolder==null)){
+            directoryPath += "/" + subFolder;
+        }
+
+        File directory = new File(directoryPath);
+        if (!directory.exists()) {
             Toast.makeText(this,
                     (directory.mkdirs() ? "Directory has been created" : "Directory not created"),
                     Toast.LENGTH_SHORT).show();
-        else
-            Toast.makeText(this, "Directory exists", Toast.LENGTH_SHORT).show();
+        }
+        return directory;
+    }
 
-        File imagePath = new File(directory,"profile.jpg");
+    private void openSpriteNameDialog(final File directory){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Sprite Name");
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
 
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                imageName = input.getText().toString().trim();
+                saveFile(directory);
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+        builder.show();
+    }
+
+    private void saveFile(File directory){
+        if(!imageName.endsWith(".jpg")){
+            imageName += ".jpg";
+        }
+        File imagePath = new File(directory,imageName);
         FileOutputStream fos = null;
         try {
-            imagePath.createNewFile();
-            fos = new FileOutputStream(imagePath);
-            pixelCanvas.bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-
+            if(directory.getAbsolutePath().toString().endsWith("Draft")){
+                imagePath.createNewFile();
+                fos = new FileOutputStream(imagePath);
+                pixelCanvas.bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+            }else{
+                final int destWidth = 512;
+                final int destHeight = 512;
+                Bitmap scaledBitmap = Bitmap.createScaledBitmap(pixelCanvas.bitmap, destWidth, destHeight,false);
+                ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+                // compress to the format you want, JPEG, PNG...
+                // 70 is the 0-100 quality percentage
+                scaledBitmap.compress(Bitmap.CompressFormat.PNG,100 , outStream);
+                imagePath.createNewFile();
+                fos = new FileOutputStream(imagePath);
+                fos.write(outStream.toByteArray());
+            }
+            notifyMediaStoreScanner(imagePath);
+            Toast.makeText(this,"File "+imageName+" is saved!",Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -453,7 +544,16 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-        Toast. makeText(this, directory.getAbsolutePath(), Toast.LENGTH_LONG).show();
-        return directory.getAbsolutePath();
+    }
+
+    public final void notifyMediaStoreScanner(final File file) {
+        try {
+            MediaStore.Images.Media.insertImage(this.getContentResolver(),
+                    file.getAbsolutePath(), file.getName(), null);
+            this.sendBroadcast(new Intent(
+                    Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(file)));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 }

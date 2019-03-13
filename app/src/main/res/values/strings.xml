@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SpriteEditor</string>
+    <string name="app_name">PixarT</string>
     
     <string-array name="canvasSizes">
         <item>32</item>
