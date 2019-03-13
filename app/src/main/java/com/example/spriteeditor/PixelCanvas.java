@@ -122,7 +122,7 @@ public class PixelCanvas extends View {
                         int preViewWidth = Math.abs(shapeStartX - roundedX) + 1 ;
                         int preViewHeight = Math.abs(shapeStartY - roundedY) + 1 ;
                         if(mode == DRAWMODE.CIRCLE){
-                            int diameter = 2*Math.min(preViewWidth,preViewHeight)+1;
+                            int diameter = 2*Math.max(preViewWidth,preViewHeight)+1;
                             preview = Bitmap.createBitmap(diameter,diameter,Bitmap.Config.ARGB_8888);
                             pvLeft = shapeStartX-(diameter/2);
                             pvTop = shapeStartY-(diameter/2);
