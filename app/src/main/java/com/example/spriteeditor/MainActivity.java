@@ -7,13 +7,13 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.graphics.ColorUtils;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -27,6 +27,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
@@ -40,22 +41,23 @@ public class MainActivity extends AppCompatActivity {
     PixelCanvas pixelCanvas;
     ImageView imageView;
     private static final int PICK_IMAGE = 100;
+    public static final int SET_COLOR = 1;
     Uri imageUri;
     ImageButton btnTool, btnPencil, btnLine, btnFloodFill, btnCut, btnRect, btnCircle, btnEraser, btnBrushColor, btnBrushSize, btnUndo, btnRedo;
     int[] brushImageId;
     HorizontalScrollView colorBar, toolBar;
     LinearLayout colorBarContainer, toolBarContainer;
+    ConstraintLayout colorPickBar;
     View coverView;
     String[] colorCodes;
-    Matrix matrix = new Matrix();
     private Resources resources;
 
-    Handler handler = new Handler(){
-        @Override
-        public void handleMessage(Message msg) {
-            imageView.setImageBitmap(Bitmap.createScaledBitmap(pixelCanvas.bitmap,256,256,false));
-        }
-    };
+    int[] argb = new int[4];
+    SeekBar[] argbSeekBar = new SeekBar[4];
+    EditText editText;
+
+    Handler handler;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,30 +65,32 @@ public class MainActivity extends AppCompatActivity {
         resources = getResources();
         imageView = findViewById(R.id.imageView);
 
+        handler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                switch (msg.what){
+                    case SET_COLOR:
+                        btnBrushColor.setBackgroundColor(msg.getData().getInt("color"));
+                        break;
+                    default:
+                        imageView.setImageBitmap(Bitmap.createScaledBitmap
+                                (pixelCanvas.bitmap, 256, 256, false));
+                }
+            }
+        };
+
         pixelCanvas = findViewById(R.id.pc);
         pixelCanvas.post(new Runnable() {
             @Override
             public void run() {
-                pixelCanvas.setBitmap(Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888));
+                pixelCanvas.setBitmap(
+                        Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888));
                 pixelCanvas.getRes();
                 loadColorBar();
-                (new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        while (true){
-                            synchronized (this){
-                                try {
-                                    wait(100);
-                                    handler.sendEmptyMessage(0);
-                                }catch (Exception e){
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                })).start();
+                setupSeekBars();
             }
         });
+        pixelCanvas.setHandler(handler);
 
         colorBar = findViewById(R.id.colorBar);
         colorBarContainer = findViewById(R.id.colorBarContainer);
@@ -99,6 +103,29 @@ public class MainActivity extends AppCompatActivity {
                 hidePopupBar();
             }
         });
+        ImageButton button = findViewById(R.id.btnColorPicker);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pixelCanvas.setMode(PixelCanvas.DRAWMODE.PICK);
+                btnTool.setImageResource(R.drawable.color_picker);
+                btnTool.setTag(R.drawable.color_picker);
+                hidePopupBar();
+            }
+        });
+        colorPickBar = findViewById(R.id.colorPickBar);
+        ImageButton btnCustomColor = findViewById(R.id.btnCustomColor);
+        btnCustomColor.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setupSeekBars();
+                colorPickBar.setVisibility(View.VISIBLE);
+                toolBar.setVisibility(View.GONE);
+                coverView.setVisibility(View.VISIBLE);
+            }
+        });
+        editText = findViewById(R.id.editText);
+        editText.setText(Integer.toHexString(pixelCanvas.brushColor));
 
         btnTool = findViewById(R.id.btnTool);
         btnTool.setImageResource(R.drawable.pencil);
@@ -115,8 +142,8 @@ public class MainActivity extends AppCompatActivity {
         btnPencil.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!pixelCanvas.eraser){
-                    pixelCanvas.mode = PixelCanvas.DRAWMODE.PEN;
+                if (!pixelCanvas.eraser) {
+                    pixelCanvas.setMode(PixelCanvas.DRAWMODE.PEN);
                 }
                 btnTool.setImageResource(R.drawable.pencil);
                 btnTool.setTag(R.drawable.pencil);
@@ -128,8 +155,8 @@ public class MainActivity extends AppCompatActivity {
         btnLine.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!pixelCanvas.eraser){
-                    pixelCanvas.mode = PixelCanvas.DRAWMODE.LINE;
+                if (!pixelCanvas.eraser) {
+                    pixelCanvas.setMode(PixelCanvas.DRAWMODE.LINE);
                 }
                 btnTool.setImageResource(R.drawable.line);
                 btnTool.setTag(R.drawable.line);
@@ -141,8 +168,8 @@ public class MainActivity extends AppCompatActivity {
         btnFloodFill.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!pixelCanvas.eraser){
-                    pixelCanvas.mode = PixelCanvas.DRAWMODE.FILL;
+                if (!pixelCanvas.eraser) {
+                    pixelCanvas.setMode(PixelCanvas.DRAWMODE.FILL);
                 }
                 btnTool.setImageResource(R.drawable.flood_fill);
                 btnTool.setTag(R.drawable.flood_fill);
@@ -154,8 +181,8 @@ public class MainActivity extends AppCompatActivity {
         btnCut.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!pixelCanvas.eraser){
-                    pixelCanvas.mode = PixelCanvas.DRAWMODE.CUT;
+                if (!pixelCanvas.eraser) {
+                    pixelCanvas.setMode(PixelCanvas.DRAWMODE.CUT);
                 }
                 btnTool.setImageResource(R.drawable.cut);
                 btnTool.setTag(R.drawable.cut);
@@ -167,8 +194,8 @@ public class MainActivity extends AppCompatActivity {
         btnRect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!pixelCanvas.eraser){
-                    pixelCanvas.mode = PixelCanvas.DRAWMODE.RECT;
+                if (!pixelCanvas.eraser) {
+                    pixelCanvas.setMode(PixelCanvas.DRAWMODE.RECT);
                 }
                 btnTool.setImageResource(R.drawable.rect);
                 btnTool.setTag(R.drawable.rect);
@@ -193,15 +220,15 @@ public class MainActivity extends AppCompatActivity {
         btnEraser.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(pixelCanvas.eraser){
+                if (pixelCanvas.eraser) {
                     pixelCanvas.eraser = false;
-                    Integer drawableId = (Integer)btnTool.getTag();
-                    switch (drawableId){
+                    Integer drawableId = (Integer) btnTool.getTag();
+                    switch (drawableId) {
                         case R.drawable.pencil:
-                            pixelCanvas.mode = PixelCanvas.DRAWMODE.PEN;
+                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.PEN);
                             break;
                         case R.drawable.line:
-                            pixelCanvas.mode = PixelCanvas.DRAWMODE.LINE;
+                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.LINE);
                             break;
                         case R.drawable.flood_fill:
                             pixelCanvas.mode = PixelCanvas.DRAWMODE.FILL;
@@ -216,9 +243,9 @@ public class MainActivity extends AppCompatActivity {
                     pixelCanvas.brushColor = ColorUtils.setAlphaComponent(pixelCanvas.brushColor, 255);
                     btnEraser.setBackgroundColor(0x00000000);
 
-                }else{
+                } else {
                     pixelCanvas.eraser = true;
-                    pixelCanvas.mode = PixelCanvas.DRAWMODE.PEN;
+                    pixelCanvas.setMode(PixelCanvas.DRAWMODE.PEN);
                     pixelCanvas.brushColor = ColorUtils.setAlphaComponent(pixelCanvas.brushColor, 0);
                     btnEraser.setBackgroundColor(0xFF9E9E9E);
                 }
@@ -239,9 +266,9 @@ public class MainActivity extends AppCompatActivity {
         btnUndo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(pixelCanvas.historyCounter>=1){
-                    if(pixelCanvas.lastBitmap==null){
-                        pixelCanvas.lastBitmap = pixelCanvas.bitmap.copy(Bitmap.Config.ARGB_8888,true);
+                if (pixelCanvas.historyCounter >= 1) {
+                    if (pixelCanvas.lastBitmap == null) {
+                        pixelCanvas.lastBitmap = pixelCanvas.bitmap.copy(Bitmap.Config.ARGB_8888, true);
                     }
                     pixelCanvas.setBitmap(pixelCanvas.bitmapHistory[--pixelCanvas.historyCounter]);
                 }
@@ -251,16 +278,16 @@ public class MainActivity extends AppCompatActivity {
         btnRedo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(pixelCanvas.historyCounter<4){
-                    if(pixelCanvas.bitmapHistory[pixelCanvas.historyCounter+1]!= null){
+                if (pixelCanvas.historyCounter < 4) {
+                    if (pixelCanvas.bitmapHistory[pixelCanvas.historyCounter + 1] != null) {
                         pixelCanvas.setBitmap(pixelCanvas.bitmapHistory[++pixelCanvas.historyCounter]);
-                    }else if(pixelCanvas.bitmapHistory[pixelCanvas.historyCounter+1]== null&&pixelCanvas.lastBitmap!=null){
+                    } else if (pixelCanvas.bitmapHistory[pixelCanvas.historyCounter + 1] == null && pixelCanvas.lastBitmap != null) {
                         pixelCanvas.setBitmap(pixelCanvas.lastBitmap);
                         pixelCanvas.lastBitmap = null;
                         pixelCanvas.historyCounter++;
                     }
-                }else{
-                    if(pixelCanvas.lastBitmap!=null) {
+                } else {
+                    if (pixelCanvas.lastBitmap != null) {
                         pixelCanvas.setBitmap(pixelCanvas.lastBitmap);
                         pixelCanvas.lastBitmap = null;
                         pixelCanvas.historyCounter++;
@@ -278,27 +305,31 @@ public class MainActivity extends AppCompatActivity {
         btnBrushSize.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(pixelCanvas.brushSize>=2){
+                if (pixelCanvas.brushSize >= 2) {
                     pixelCanvas.brushSize = 0;
                     btnBrushSize.setImageResource(brushImageId[pixelCanvas.brushSize]);
-                }else{
+                } else {
                     btnBrushSize.setImageResource(brushImageId[++pixelCanvas.brushSize]);
                 }
             }
         });
 
     }
-    public void hidePopupBar(){
-        if(colorBar.isShown()){
+
+    public void hidePopupBar() {
+        if (colorBar.isShown()) {
             colorBar.setVisibility(View.GONE);
         }
-        if(toolBar.isShown()){
+        if (toolBar.isShown()) {
             toolBar.setVisibility(View.GONE);
+        }
+        if( colorPickBar.isShown()){
+            colorPickBar.setVisibility(View.GONE);
         }
         coverView.setVisibility(View.GONE);
     }
 
-    public void loadColorBar(){
+    public void loadColorBar() {
         String rawColorCodes = loadFile("color_codes");
         colorCodes = rawColorCodes.split("\\r?\\n");
         ImageButton[] colorButtons = new ImageButton[colorCodes.length];
@@ -308,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
 
         for (int i = 0; i < colorButtons.length; i++) {
             colorButtons[i] = new ImageButton(this);
-            final int colorCode = Color.parseColor("#"+colorCodes[i]);
+            final int colorCode = Color.parseColor("#" + colorCodes[i]);
             colorButtons[i].setBackgroundColor(colorCode);
             colorButtons[i].setTag(i);
             colorButtons[i].setId(i);
@@ -316,8 +347,9 @@ public class MainActivity extends AppCompatActivity {
             colorButtons[i].setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    pixelCanvas.brushColor = colorCode;
-                    btnBrushColor.setBackgroundColor(colorCode);
+                    if (!pixelCanvas.eraser) {
+                        pixelCanvas.setBrushColor(colorCode);
+                    }
                     hidePopupBar();
                 }
             });
@@ -330,7 +362,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public String loadFile(String fileName){
+    public String loadFile(String fileName) {
         InputStream inputStream;
         int rID = resources.getIdentifier(fileName, "raw", getPackageName());
         inputStream = resources.openRawResource(rID);
@@ -384,7 +416,7 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    public void newCanvas(){
+    public void newCanvas() {
         final String[] listSizes = getResources().getStringArray(R.array.canvasSizes);
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
         dialogBuilder.setTitle("Select a canvas size");
@@ -410,7 +442,42 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    private void openGallery(){
+    private void setupSeekBars() {
+        int hex = pixelCanvas.brushColor;
+        final int[] seekBarID ={R.id.aSeekBar,R.id.rSeekBar,R.id.gSeekBar,R.id.bSeekBar};
+        SeekBar.OnSeekBarChangeListener changeListener = new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                StringBuilder color = new StringBuilder("#");
+                for(int i=0;i<4;i++){
+                    if(seekBar.getId()==seekBarID[i]){
+                        argb[i]=progress;
+                    }
+                    color.append(Integer.toHexString(argb[i]));
+                }
+                editText.setText(color.toString());
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        };
+        for(int i=0;i<4;i++){
+            int bit = 8*(3-i);
+            argb[i] = (hex>>bit)&255;
+            argbSeekBar[i]=findViewById(seekBarID[i]);
+            argbSeekBar[i].setProgress(argb[i]);
+            argbSeekBar[i].setOnSeekBarChangeListener(changeListener);
+        }
+    }
+
+    private void openGallery() {
         Intent gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
         startActivityForResult(gallery, PICK_IMAGE);
     }
@@ -418,7 +485,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(resultCode == RESULT_OK && requestCode == PICK_IMAGE){
+        if (resultCode == RESULT_OK && requestCode == PICK_IMAGE) {
             try {
                 imageUri = data.getData();
                 InputStream imageStream = getContentResolver().openInputStream(imageUri);
@@ -455,6 +522,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private String saveImageToGallery() {
+        File directory = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DCIM).getAbsolutePath() + "/Sprites");
+        if (!directory.exists())
     String imageName;
 
 
@@ -487,6 +558,7 @@ public class MainActivity extends AppCompatActivity {
         return directory;
     }
 
+        File imagePath = new File(directory, "profile.jpg");
     private void openSpriteNameDialog(final File directory){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Sprite Name");
@@ -555,5 +627,10 @@ public class MainActivity extends AppCompatActivity {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+    }
+
+    public void customColor(View view) {
+        int i = 0;
+        pixelCanvas.setBrushColor(Color.argb(argb[i++],argb[i++],argb[i++],argb[i]));
     }
 }
