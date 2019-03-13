@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
     SeekBar[] argbSeekBar = new SeekBar[4];
     EditText editText;
 
+    String imageName;
     Handler handler;
 
     @Override
@@ -327,178 +328,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void hidePopupBar() {
-        if (colorBar.isShown()) {
-            colorBar.setVisibility(View.GONE);
-        }
-        if (toolBar.isShown()) {
-            toolBar.setVisibility(View.GONE);
-        }
-        if (colorPickBar.isShown()) {
-            colorPickBar.setVisibility(View.GONE);
-        }
-        coverView.setVisibility(View.GONE);
-    }
-
-    public void loadColorBar() {
-        String rawColorCodes = loadFile("color_codes");
-        colorCodes = rawColorCodes.split("\\r?\\n");
-        ImageButton[] colorButtons = new ImageButton[colorCodes.length];
-
-        int length40 = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 40, getResources().getDisplayMetrics());
-        int length20 = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 20, getResources().getDisplayMetrics());
-
-        for (int i = 0; i < colorButtons.length; i++) {
-            colorButtons[i] = new ImageButton(this);
-            final int colorCode = Color.parseColor("#" + colorCodes[i]);
-            colorButtons[i].setBackgroundColor(colorCode);
-            colorButtons[i].setTag(i);
-            colorButtons[i].setId(i);
-
-            colorButtons[i].setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (!pixelCanvas.eraser) {
-                        pixelCanvas.setBrushColor(colorCode);
-                    }
-                    hidePopupBar();
-                }
-            });
-
-            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(length40, length40);
-            layoutParams.setMargins(length20, length20, length20, length20);
-            colorButtons[i].setLayoutParams(layoutParams);
-
-            colorBarContainer.addView(colorButtons[i]);
-        }
-    }
-
-    public String loadFile(String fileName) {
-        InputStream inputStream;
-        int rID = resources.getIdentifier(fileName, "raw", getPackageName());
-        inputStream = resources.openRawResource(rID);
-        String output = "";
-        byte[] buffer;
-
-        try {
-            buffer = new byte[inputStream.available()];
-            //read the text file as a stream, into the buffer
-            inputStream.read(buffer);
-            //create a output stream to write the buffer into
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            //write this buffer to the output stream
-            outputStream.write(buffer);
-            //Close the Input and Output streams
-            outputStream.close();
-            inputStream.close();
-            output = outputStream.toString();
-            //return the output stream as a String
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return output;
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.sprite_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        switch (id){
-            case R.id.newSprite:
-                newCanvas();
-                break;
-            case R.id.saveDraft:
-                saveImageToGallery("Draft");
-                break;
-            case R.id.importPicture:
-                openGallery();
-                break;
-            case R.id.exportPicture:
-                saveImageToGallery("");
-                break;
-                default:
-                    break;
-        }
-        return true;
-    }
-
-    public void newCanvas() {
-        final String[] listSizes = getResources().getStringArray(R.array.canvasSizes);
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-        dialogBuilder.setTitle("Select a canvas size");
-        dialogBuilder.setSingleChoiceItems(listSizes, -1, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                int canvasSize = Integer.parseInt(listSizes[which]);
-                Bitmap newBitmap = Bitmap.createBitmap(canvasSize, canvasSize, Bitmap.Config.ARGB_8888);
-                pixelCanvas.setBitmap(newBitmap);
-                pixelCanvas.getRes();
-                pixelCanvas.newHistory();
-                btnBrushColor.setBackgroundColor(pixelCanvas.brushColor);
-                dialog.dismiss();
-            }
-        });
-        dialogBuilder.setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-
-            }
-        });
-        AlertDialog dialog = dialogBuilder.create();
-        dialog.show();
-    }
-
-    private void setupSeekBars() {
-        final int[] seekBarID = {R.id.aSeekBar, R.id.rSeekBar, R.id.gSeekBar, R.id.bSeekBar};
-        SeekBar.OnSeekBarChangeListener changeListener = new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                StringBuilder color = new StringBuilder("#");
-                for (int i = 0; i < 4; i++) {
-                    if (seekBar.getId() == seekBarID[i]) {
-                        argb[i] = progress;
-                    }
-                    color.append(String.format("%02X", argb[i]));
-                }
-                editText.setText(color.toString());
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        };
-        for (int i = 0; i < 4; i++) {
-            argbSeekBar[i] = findViewById(seekBarID[i]);
-            argbSeekBar[i].setOnSeekBarChangeListener(changeListener);
-        }
-        setSeekBarValues();
-    }
-
-    private void setSeekBarValues() {
-        int hex = pixelCanvas.brushColor;
-        for (int i = 0; i < 4; i++) {
-            int bit = 8 * (3 - i);
-            argb[i] = (hex >> bit) & 255;
-            argbSeekBar[i].setProgress(argb[i]);
-        }
-    }
-
-    private void openGallery() {
-        Intent gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
-        startActivityForResult(gallery, PICK_IMAGE);
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -539,9 +368,59 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.sprite_menu, menu);
+        return true;
+    }
 
-    String imageName;
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        switch (id){
+            case R.id.newSprite:
+                newCanvas();
+                break;
+            case R.id.saveDraft:
+                saveImageToGallery("Draft");
+                break;
+            case R.id.importPicture:
+                openGallery();
+                break;
+            case R.id.exportPicture:
+                saveImageToGallery("");
+                break;
+                default:
+                    break;
+        }
+        return true;
+    }
 
+    public String loadFile(String fileName) {
+        InputStream inputStream;
+        int rID = resources.getIdentifier(fileName, "raw", getPackageName());
+        inputStream = resources.openRawResource(rID);
+        String output = "";
+        byte[] buffer;
+
+        try {
+            buffer = new byte[inputStream.available()];
+            //read the text file as a stream, into the buffer
+            inputStream.read(buffer);
+            //create a output stream to write the buffer into
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            //write this buffer to the output stream
+            outputStream.write(buffer);
+            //Close the Input and Output streams
+            outputStream.close();
+            inputStream.close();
+            output = outputStream.toString();
+            //return the output stream as a String
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return output;
+    }
 
     private String saveImageToGallery(String subFolder){
         File directory = createDirectory(subFolder);
@@ -571,7 +450,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return directory;
     }
-
 
     private void openSpriteNameDialog(final File directory){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -646,5 +524,123 @@ public class MainActivity extends AppCompatActivity {
     public void customColor(View view) {
         int i = 0;
         pixelCanvas.setBrushColor(Color.argb(argb[i++], argb[i++], argb[i++], argb[i]));
+    }
+
+    public void newCanvas() {
+        final String[] listSizes = getResources().getStringArray(R.array.canvasSizes);
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setTitle("Select a canvas size");
+        dialogBuilder.setSingleChoiceItems(listSizes, -1, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                int canvasSize = Integer.parseInt(listSizes[which]);
+                Bitmap newBitmap = Bitmap.createBitmap(canvasSize, canvasSize, Bitmap.Config.ARGB_8888);
+                pixelCanvas.setBitmap(newBitmap);
+                pixelCanvas.getRes();
+                pixelCanvas.newHistory();
+                btnBrushColor.setBackgroundColor(pixelCanvas.brushColor);
+                dialog.dismiss();
+            }
+        });
+        dialogBuilder.setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+        AlertDialog dialog = dialogBuilder.create();
+        dialog.show();
+    }
+
+    public void hidePopupBar() {
+        if (colorBar.isShown()) {
+            colorBar.setVisibility(View.GONE);
+        }
+        if (toolBar.isShown()) {
+            toolBar.setVisibility(View.GONE);
+        }
+        if (colorPickBar.isShown()) {
+            colorPickBar.setVisibility(View.GONE);
+        }
+        coverView.setVisibility(View.GONE);
+    }
+
+    public void loadColorBar() {
+        String rawColorCodes = loadFile("color_codes");
+        colorCodes = rawColorCodes.split("\\r?\\n");
+        ImageButton[] colorButtons = new ImageButton[colorCodes.length];
+
+        int length40 = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 40, getResources().getDisplayMetrics());
+        int length20 = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 20, getResources().getDisplayMetrics());
+
+        for (int i = 0; i < colorButtons.length; i++) {
+            colorButtons[i] = new ImageButton(this);
+            final int colorCode = Color.parseColor("#" + colorCodes[i]);
+            colorButtons[i].setBackgroundColor(colorCode);
+            colorButtons[i].setTag(i);
+            colorButtons[i].setId(i);
+
+            colorButtons[i].setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (!pixelCanvas.eraser) {
+                        pixelCanvas.setBrushColor(colorCode);
+                    }
+                    hidePopupBar();
+                }
+            });
+
+            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(length40, length40);
+            layoutParams.setMargins(length20, length20, length20, length20);
+            colorButtons[i].setLayoutParams(layoutParams);
+
+            colorBarContainer.addView(colorButtons[i]);
+        }
+    }
+
+    private void setupSeekBars() {
+        final int[] seekBarID = {R.id.aSeekBar, R.id.rSeekBar, R.id.gSeekBar, R.id.bSeekBar};
+        SeekBar.OnSeekBarChangeListener changeListener = new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                StringBuilder color = new StringBuilder("#");
+                for (int i = 0; i < 4; i++) {
+                    if (seekBar.getId() == seekBarID[i]) {
+                        argb[i] = progress;
+                    }
+                    color.append(String.format("%02X", argb[i]));
+                }
+                editText.setText(color.toString());
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        };
+        for (int i = 0; i < 4; i++) {
+            argbSeekBar[i] = findViewById(seekBarID[i]);
+            argbSeekBar[i].setOnSeekBarChangeListener(changeListener);
+        }
+        setSeekBarValues();
+    }
+
+    private void setSeekBarValues() {
+        int hex = pixelCanvas.brushColor;
+        for (int i = 0; i < 4; i++) {
+            int bit = 8 * (3 - i);
+            argb[i] = (hex >> bit) & 255;
+            argbSeekBar[i].setProgress(argb[i]);
+        }
+    }
+
+    private void openGallery() {
+        Intent gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+        startActivityForResult(gallery, PICK_IMAGE);
     }
 }

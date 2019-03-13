@@ -109,7 +109,6 @@ final class GraphicUlti {
         int dx = 1;
         int dy = 1;
         int err = dx - (radius*2);
-        drawPoint(x0,y0,brushColor,bitmap,size);
         while (x >= y) {
             drawPoint(x0 + x, y0 + y, brushColor, bitmap, size);
             drawPoint(x0 + y, y0 + x, brushColor, bitmap, size);
@@ -134,7 +133,6 @@ final class GraphicUlti {
         }
     }
 
-
     static void drawPoint(int x, int y, int color, Bitmap bitmap, int size) {
         if (size == 0) {
             drawPixel(x, y, color, bitmap);
@@ -144,7 +142,6 @@ final class GraphicUlti {
                     drawPixel(x + i, y + j, color, bitmap);
                 }
             }
-
     }
 
     private static void drawPixel(int x, int y, int color, Bitmap bitmap) {

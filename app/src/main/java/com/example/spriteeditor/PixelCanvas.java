@@ -121,15 +121,15 @@ public class PixelCanvas extends View {
                     case MotionEvent.ACTION_MOVE:
                         int preViewWidth = Math.abs(shapeStartX - roundedX) + 1 ;
                         int preViewHeight = Math.abs(shapeStartY - roundedY) + 1 ;
-                        pvLeft = Math.min(shapeStartX, roundedX);
-                        pvTop = Math.min(shapeStartY, roundedY);
                         if(mode == DRAWMODE.CIRCLE){
                             int diameter = 2*Math.min(preViewWidth,preViewHeight)+1;
                             preview = Bitmap.createBitmap(diameter,diameter,Bitmap.Config.ARGB_8888);
-                            pvLeft -=diameter/2;
-                            pvTop -=diameter/2;
+                            pvLeft = shapeStartX-(diameter/2);
+                            pvTop = shapeStartY-(diameter/2);
                         }else {
                             preview = Bitmap.createBitmap(preViewWidth, preViewHeight, Bitmap.Config.ARGB_8888);
+                            pvLeft = Math.min(shapeStartX, roundedX);
+                            pvTop = Math.min(shapeStartY, roundedY);
                         }
                         switch (mode) {
                             case CUT:
@@ -181,6 +181,76 @@ public class PixelCanvas extends View {
         newHistory();
     }
 
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        int pointerCount = event.getPointerCount();
+        if (pointerCount > 1) {
+            dragAndScale(event);
+        } else {
+            roundedX = (int) Math.floor(event.getX() / scale - left);
+            roundedY = (int) Math.floor(event.getY() / scale - top);
+            if(mode == DRAWMODE.MOVE){
+                shapeMove.onTouchEvent(event);
+            }else {
+                if(event.getActionMasked()==MotionEvent.ACTION_DOWN) {
+                    updateBitmapHistory();
+                }
+                switch (mode) {
+                    case PEN:
+                        System.out.println(scale);
+                        System.out.println(event.getX() + " " + event.getY());
+                        System.out.println(roundedX + " " + roundedY);
+                        GraphicUlti.drawPoint(roundedX,roundedY,brushColor,bitmap,brushSize);
+                        break;
+                    case FILL:
+                        GraphicUlti.floodFill(roundedX, roundedY, bitmap.getPixel(roundedX, roundedY),bitmap,brushColor);
+                        break;
+                    case PICK:
+                        pickColor();
+                        setMode(preMode==null?DRAWMODE.PEN:preMode);
+                        break;
+                    case CUT:
+                    case LINE:
+                    case RECT:
+                    case CIRCLE:
+                        onTouchListener.onTouch(this,event);
+                        break;
+                }
+            }
+        }
+        performClick();
+        invalidate();
+        handler.sendEmptyMessage(0);
+        return true;
+    }
+
+    @Override
+    public boolean performClick() {
+        return super.performClick();
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+        if (bg != null && bitmap != null) {
+            canvas.scale(scale, scale);
+            canvas.drawBitmap(bg, left, top, paint);
+            canvas.drawBitmap(bitmap, left, top, paint);
+            handler.sendEmptyMessage(0);
+        }
+        if (preview !=null && movable) {
+            //Draw preview
+            canvas.drawBitmap(preview, (int)(pvLeft) + left, (int)(pvTop)+ top, paint);
+            //Draw outline
+            Paint pvPaint = new Paint(paint);
+            pvPaint.setColor(0xFF00695D);
+            pvPaint.setStyle(Paint.Style.STROKE);
+            pvPaint.setStrokeWidth(1 / scale * 5);
+            canvas.drawRect((int)(pvLeft) + left, (int)(pvTop) + top,
+                    (int)(pvLeft) + left + preview.getWidth(), (int)(pvTop) + top + preview.getHeight(), pvPaint);
+        }
+        super.draw(canvas);
+    }
+
     public void setBitmap(Bitmap bitmap) {
         this.bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
         handler.sendEmptyMessage(0);
@@ -230,27 +300,6 @@ public class PixelCanvas extends View {
         historyCounter = 0;
     }
 
-    @Override
-    public void draw(Canvas canvas) {
-        if (bg != null && bitmap != null) {
-            canvas.scale(scale, scale);
-            canvas.drawBitmap(bg, left, top, paint);
-            canvas.drawBitmap(bitmap, left, top, paint);
-        }
-        if (preview !=null && movable) {
-            //Draw preview
-            canvas.drawBitmap(preview, (int)(pvLeft) + left, (int)(pvTop)+ top, paint);
-            //Draw outline
-            Paint pvPaint = new Paint(paint);
-            pvPaint.setColor(0xFF0000FF);
-            pvPaint.setStyle(Paint.Style.STROKE);
-            pvPaint.setStrokeWidth(1 / scale * 5);
-            canvas.drawRect((int)(pvLeft) + left, (int)(pvTop) + top,
-                    (int)(pvLeft) + left + preview.getWidth(), (int)(pvTop) + top + preview.getHeight(), pvPaint);
-        }
-        super.draw(canvas);
-    }
-
     public void updateBitmapHistory(){
         setNull();
         if(historyCounter<=historySize-1){
@@ -267,14 +316,18 @@ public class PixelCanvas extends View {
     }
 
     public void setMode(DRAWMODE mode) {
+        if(movable){
+            movable = false;
+            GraphicUlti.drawShape((int)pvTop,(int)pvLeft,preview,bitmap);
+            invalidate();
+        }
         switch (mode){
             case PICK:
             case MOVE:
                 preMode = mode;
-            default:
-                this.mode = mode;
-
+                break;
         }
+        this.mode = mode;
     }
 
     public void setNull(){
@@ -282,54 +335,6 @@ public class PixelCanvas extends View {
             bitmapHistory[i] = null;
         }
         lastBitmap = null;
-    }
-
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        int pointerCount = event.getPointerCount();
-        if (pointerCount > 1) {
-            dragAndScale(event);
-        } else {
-            roundedX = (int) Math.floor(event.getX() / scale - left);
-            roundedY = (int) Math.floor(event.getY() / scale - top);
-            if(mode == DRAWMODE.MOVE){
-                shapeMove.onTouchEvent(event);
-            }else {
-                if(event.getActionMasked()==MotionEvent.ACTION_DOWN) {
-                    updateBitmapHistory();
-                }
-                switch (mode) {
-                    case PEN:
-                        System.out.println(scale);
-                        System.out.println(event.getX() + " " + event.getY());
-                        System.out.println(roundedX + " " + roundedY);
-                        GraphicUlti.drawPoint(roundedX,roundedY,brushColor,bitmap,brushSize);
-                        break;
-                    case FILL:
-                        GraphicUlti.floodFill(roundedX, roundedY, bitmap.getPixel(roundedX, roundedY),bitmap,brushColor);
-                        break;
-                    case PICK:
-                        pickColor();
-                        setMode(preMode==null?DRAWMODE.PEN:preMode);
-                        break;
-                    case CUT:
-                    case LINE:
-                    case RECT:
-                    case CIRCLE:
-                        onTouchListener.onTouch(this,event);
-                        break;
-                }
-            }
-        }
-        performClick();
-        invalidate();
-        handler.sendEmptyMessage(0);
-        return true;
-    }
-
-    @Override
-    public boolean performClick() {
-        return super.performClick();
     }
 
     private void dragAndScale(MotionEvent event) {
