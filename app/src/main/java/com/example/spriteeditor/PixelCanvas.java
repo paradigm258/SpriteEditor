@@ -235,6 +235,7 @@ public class PixelCanvas extends View {
             canvas.scale(scale, scale);
             canvas.drawBitmap(bg, left, top, paint);
             canvas.drawBitmap(bitmap, left, top, paint);
+            handler.sendEmptyMessage(0);
         }
         if (preview !=null && movable) {
             //Draw preview
@@ -247,7 +248,6 @@ public class PixelCanvas extends View {
             canvas.drawRect((int)(pvLeft) + left, (int)(pvTop) + top,
                     (int)(pvLeft) + left + preview.getWidth(), (int)(pvTop) + top + preview.getHeight(), pvPaint);
         }
-        handler.sendEmptyMessage(0);
         super.draw(canvas);
     }
 
