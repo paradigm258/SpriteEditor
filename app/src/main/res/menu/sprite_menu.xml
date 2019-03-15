@@ -4,7 +4,9 @@
     <item android:title="New Sprite"
         android:id="@+id/newSprite"></item>
     <item android:title="Save Draft"
-        android:id="@+id/saveDraft"></item>
+    android:id="@+id/saveDraft"></item>
+    <item android:title="Save Draft As"
+        android:id="@+id/saveDraftAs"></item>
     <item android:title="Import Picture"
         android:id="@+id/importPicture"></item>
     <item android:title="Export Picture"

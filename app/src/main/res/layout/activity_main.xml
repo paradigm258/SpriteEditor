@@ -116,17 +116,6 @@
                 app:srcCompat="@drawable/flood_fill" />
 
             <ImageButton
-                android:id="@+id/btnCut"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="10dp"
-                android:layout_weight="1"
-                android:background="@android:color/transparent"
-                android:padding="0dp"
-                android:scaleType="fitXY"
-                app:srcCompat="@drawable/cut" />
-
-            <ImageButton
                 android:id="@+id/btnColorPicker"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
@@ -147,6 +136,17 @@
                 android:padding="0dp"
                 android:scaleType="fitXY"
                 app:srcCompat="@drawable/custom_color" />
+
+            <ImageButton
+                android:id="@+id/btnCut"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="10dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:padding="0dp"
+                android:scaleType="fitXY"
+                app:srcCompat="@drawable/cut" />
 
             <ImageButton
                 android:id="@+id/btnRect"
@@ -268,98 +268,157 @@
         app:layout_constraintTop_toBottomOf="@+id/btnTool" />
 
     <android.support.constraint.ConstraintLayout
-        android:id="@+id/colorPickBar"
-        android:layout_width="0dp"
+        android:id="@+id/customColorBar"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="25dp"
+        android:layout_marginEnd="25dp"
         android:background="@color/colorBackground"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.468">
+
+        <TextView
+            android:id="@+id/tvAlpha"
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:text="Alpha"
+            app:layout_constraintBottom_toTopOf="@+id/tvRed"
+            app:layout_constraintEnd_toStartOf="@+id/aSeekBar"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <SeekBar
             android:id="@+id/aSeekBar"
-            android:layout_width="0dp"
+            android:layout_width="255dp"
             android:layout_height="wrap_content"
             android:max="255"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/rSeekBar"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/tvAlpha"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tvRed"
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:text="Red"
+            app:layout_constraintBottom_toTopOf="@+id/tvGreen"
+            app:layout_constraintEnd_toStartOf="@+id/rSeekBar"
+            app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.0" />
+            app:layout_constraintTop_toBottomOf="@+id/tvAlpha" />
 
         <SeekBar
             android:id="@+id/rSeekBar"
-            android:layout_width="0dp"
+            android:layout_width="255dp"
             android:layout_height="wrap_content"
             android:max="255"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/gSeekBar"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/tvRed"
+            app:layout_constraintTop_toBottomOf="@+id/aSeekBar" />
+
+        <TextView
+            android:id="@+id/tvGreen"
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:text="Green"
+            app:layout_constraintBottom_toTopOf="@+id/tvBlue"
+            app:layout_constraintEnd_toStartOf="@+id/gSeekBar"
+            app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/aSeekBar"
-            app:layout_constraintVertical_bias="0.0" />
+            app:layout_constraintTop_toBottomOf="@+id/tvRed" />
 
         <SeekBar
             android:id="@+id/gSeekBar"
-            android:layout_width="0dp"
+            android:layout_width="255dp"
             android:layout_height="wrap_content"
             android:max="255"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/bSeekBar"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="1.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/rSeekBar"
-            app:layout_constraintVertical_bias="0.0" />
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/tvGreen"
+            app:layout_constraintTop_toBottomOf="@+id/rSeekBar" />
 
         <TextView
-            android:id="@+id/textView"
-            android:layout_width="wrap_content"
+            android:id="@+id/tvBlue"
+            android:layout_width="50dp"
             android:layout_height="wrap_content"
-            android:text="Hex"
-            android:textSize="18sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/editText"
+            android:text="Blue"
+            app:layout_constraintBottom_toTopOf="@+id/linearLayout"
+            app:layout_constraintEnd_toStartOf="@+id/bSeekBar"
+            app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/bSeekBar" />
-
-        <EditText
-            android:id="@+id/editText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="text"
-            android:text="Name"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/customColor"
-            app:layout_constraintStart_toEndOf="@+id/textView"
-            app:layout_constraintTop_toBottomOf="@+id/bSeekBar"
-            app:layout_constraintVertical_bias="0.0" />
+            app:layout_constraintTop_toBottomOf="@+id/tvGreen" />
 
         <SeekBar
             android:id="@+id/bSeekBar"
-            android:layout_width="0dp"
+            android:layout_width="255dp"
             android:layout_height="wrap_content"
             android:max="255"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/linearLayout"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/gSeekBar"
-            app:layout_constraintVertical_bias="0.0" />
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/tvBlue"
+            app:layout_constraintTop_toBottomOf="@+id/gSeekBar" />
 
-        <ImageButton
-            android:id="@+id/customColor"
-            android:layout_width="102dp"
-            android:layout_height="0dp"
-            android:onClick="customColor"
-            android:scaleType="fitXY"
+        <LinearLayout
+            android:id="@+id/linearLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:orientation="horizontal"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/editText"
-            app:layout_constraintTop_toBottomOf="@+id/bSeekBar"
-            app:srcCompat="@color/colorAccent" />
+            app:layout_constraintStart_toStartOf="parent">
+
+            <TextView
+                android:id="@+id/textView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:text="Hex"
+                android:textSize="18sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/editText"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/bSeekBar" />
+
+            <EditText
+                android:id="@+id/editText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="text"
+                android:text="Name"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/customColor"
+                app:layout_constraintStart_toEndOf="@+id/textView"
+                app:layout_constraintTop_toBottomOf="@+id/bSeekBar" />
+
+            <ImageButton
+                android:id="@+id/customColor"
+                android:layout_width="60dp"
+                android:layout_height="match_parent"
+                android:background="@color/colorAccent"
+                android:onClick="customColor"
+                android:scaleType="fitXY"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/editText"
+                app:layout_constraintTop_toBottomOf="@+id/bSeekBar"
+                app:srcCompat="@android:color/transparent" />
+        </LinearLayout>
+
     </android.support.constraint.ConstraintLayout>
 
 </android.support.constraint.ConstraintLayout>

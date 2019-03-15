@@ -176,7 +176,7 @@ public class PixelCanvas extends View {
         paint.setFilterBitmap(false);
 
         brushColor = 0xFF000000;
-        historySize = 5;
+        historySize = 20;
         brushSize = 0;
         newHistory();
     }
@@ -197,9 +197,6 @@ public class PixelCanvas extends View {
                 }
                 switch (mode) {
                     case PEN:
-                        System.out.println(scale);
-                        System.out.println(event.getX() + " " + event.getY());
-                        System.out.println(roundedX + " " + roundedY);
                         GraphicUlti.drawPoint(roundedX,roundedY,brushColor,bitmap,brushSize);
                         break;
                     case FILL:
@@ -331,7 +328,7 @@ public class PixelCanvas extends View {
     }
 
     public void setNull(){
-        for(int i=historyCounter; i<5; i++){
+        for(int i=historyCounter; i<historySize; i++){
             bitmapHistory[i] = null;
         }
         lastBitmap = null;
@@ -346,6 +343,22 @@ public class PixelCanvas extends View {
 
     private void pickColor(){
         setBrushColor(bitmap.getPixel(roundedX,roundedY));
+    }
+
+    public void setEraser(boolean enable){
+        this.eraser = enable;
+    }
+
+    public boolean getEraser(){
+        return this.eraser;
+    }
+
+    public void setBrushSize(int brushSize){
+        this.brushSize = brushSize;
+    }
+
+    public int getBrushSize(){
+        return this.brushSize;
     }
 
 }
