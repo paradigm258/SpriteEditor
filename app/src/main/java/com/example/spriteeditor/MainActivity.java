@@ -445,7 +445,7 @@ public class MainActivity extends AppCompatActivity {
     private File createDirectory(String subFolder) {
         String directoryPath = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_DCIM).getAbsolutePath() + "/Sprites";
-        if (!(subFolder.isEmpty() || subFolder == null)) {
+        if (!(subFolder == null || subFolder.isEmpty())) {
             directoryPath += "/" + subFolder;
         }
 
@@ -488,7 +488,7 @@ public class MainActivity extends AppCompatActivity {
         File imagePath = new File(directory, imageName);
         FileOutputStream fos = null;
         try {
-            if (directory.getAbsolutePath().toString().endsWith("Draft")) {
+            if (directory.getAbsolutePath().endsWith("Draft")) {
                 imagePath.createNewFile();
                 fos = new FileOutputStream(imagePath);
                 pixelCanvas.bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
@@ -536,12 +536,20 @@ public class MainActivity extends AppCompatActivity {
                 String directoryPath = Environment.getExternalStoragePublicDirectory(
                         Environment.DIRECTORY_DCIM).getAbsolutePath() + "/Sprites/Draft";
                 File directory = new File(directoryPath);
+                if(!directory.exists()){
+                    if(directory.mkdirs()){
+                        Toast.makeText(this,"Can't create directory",Toast.LENGTH_SHORT)
+                        .show();
+                        return;
+                    }
+                }
                 String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
                 imageName = "IMG_" + timeStamp + ".jpg";
                 saveFile(directory);
             }else{
                 saveImageToGallery("Draft", false);
             }
+            pixelCanvas.setNull();
         }
         super.onStop();
     }
@@ -590,9 +598,9 @@ public class MainActivity extends AppCompatActivity {
         rawColorCodes = loadFile("color_codes");
         colorCodes = rawColorCodes.split("\\r?\\n");
 
-        for (int i = 0; i < colorCodes.length; i++) {
-            int colorCode = Color.parseColor("#" + colorCodes[i]);
-            addNewColor(colorCodes[i], false);
+        for (String colorCode1 : colorCodes) {
+            int colorCode = Color.parseColor("#" + colorCode1);
+            addNewColor(colorCode1, false);
         }
     }
 
