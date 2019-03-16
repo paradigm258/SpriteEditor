@@ -1,8 +1,10 @@
 package com.example.spriteeditor;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -15,6 +17,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.graphics.ColorUtils;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -66,11 +69,11 @@ public class MainActivity extends AppCompatActivity {
 
     String imageName;
     Handler handler;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         resources = getResources();
         imageView = findViewById(R.id.imageView);
 
@@ -313,6 +316,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        checkPermission();
     }
 
     public void setToolBarButtonHandler(PixelCanvas.DRAWMODE drawmode, int resource) {
@@ -716,7 +721,40 @@ public class MainActivity extends AppCompatActivity {
         inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
+    public void checkPermission(){
+        int readPermission = this.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
+        int writePermission = this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if(readPermission != PackageManager.PERMISSION_GRANTED ||
+                writePermission != PackageManager.PERMISSION_GRANTED){
+            if(ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.RECORD_AUDIO)){
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("Permission required")
+                        .setMessage("PixarT app need permission to save image to and " +
+                                "import image from you storage!");
+                builder.setPositiveButton("Give permission",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                requestPermission();
+                            }
+                        });
+                AlertDialog alertDialog = builder.create();
+                alertDialog.show();
+            }else{
+                requestPermission();
+            }
+        }
+    }
 
+    private final int PERMISSION_REQUEST_CODE = 100;
+    public void requestPermission(){
+        String [] permissions = {
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+        };
 
+        ActivityCompat.requestPermissions(this, permissions, PERMISSION_REQUEST_CODE);
+    }
 
 }
