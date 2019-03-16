@@ -26,13 +26,15 @@ final class GraphicUlti {
     }
 
     static void drawRect(Bitmap bitmap, int brushColor, int size) {
-        for (int x = 0; x < bitmap.getWidth(); x++) {
-            drawPoint(x, 0, brushColor, bitmap, size);
-            drawPoint(x, bitmap.getHeight() - 1, brushColor, bitmap, size);
+        int pivot = size>0?1:0;
+        int p = size>1?1:0;
+        for (int x = pivot; x < bitmap.getWidth(); x++) {
+            drawPoint(x, pivot, brushColor, bitmap, size);
+            drawPoint(x, bitmap.getHeight() - 1-p, brushColor, bitmap, size);
         }
-        for (int y = 0; y < bitmap.getHeight(); y++) {
-            drawPoint(0, y, brushColor, bitmap, size);
-            drawPoint(bitmap.getWidth() - 1, y, brushColor, bitmap, size);
+        for (int y = pivot; y < bitmap.getHeight(); y++) {
+            drawPoint(pivot, y, brushColor, bitmap, size);
+            drawPoint(bitmap.getWidth() - 1-p, y, brushColor, bitmap, size);
         }
     }
 
@@ -78,7 +80,7 @@ final class GraphicUlti {
         }
     }
 
-    public static void floodFill(int x, int y, int floodColor, Bitmap bitmap, int brushColor) {
+    static void floodFill(int x, int y, int floodColor, Bitmap bitmap, int brushColor) {
         if (floodColor == brushColor) return;
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
@@ -100,9 +102,8 @@ final class GraphicUlti {
     }
 
     static void drawCircle(int brushColor, Bitmap bitmap, int size) {
-        int radius = bitmap.getWidth()/2+1;
-        int x0 = radius-1;
-        int y0 = radius-1;
+        int radius = (bitmap.getWidth()/2)+1-(size>0?1:0);
+        int x0 = bitmap.getWidth()/2;
 
         int x = radius - 1;
         int y = 0;
@@ -110,14 +111,14 @@ final class GraphicUlti {
         int dy = 1;
         int err = dx - (radius*2);
         while (x >= y) {
-            drawPoint(x0 + x, y0 + y, brushColor, bitmap, size);
-            drawPoint(x0 + y, y0 + x, brushColor, bitmap, size);
-            drawPoint(x0 - y, y0 + x, brushColor, bitmap, size);
-            drawPoint(x0 - x, y0 + y, brushColor, bitmap, size);
-            drawPoint(x0 - x, y0 - y, brushColor, bitmap, size);
-            drawPoint(x0 - y, y0 - x, brushColor, bitmap, size);
-            drawPoint(x0 + y, y0 - x, brushColor, bitmap, size);
-            drawPoint(x0 + x, y0 - y, brushColor, bitmap, size);
+            drawPoint(x0 + x, x0 + y, brushColor, bitmap, size);
+            drawPoint(x0 + y, x0 + x, brushColor, bitmap, size);
+            drawPoint(x0 - y, x0 + x, brushColor, bitmap, size);
+            drawPoint(x0 - x, x0 + y, brushColor, bitmap, size);
+            drawPoint(x0 - x, x0 - y, brushColor, bitmap, size);
+            drawPoint(x0 - y, x0 - x, brushColor, bitmap, size);
+            drawPoint(x0 + y, x0 - x, brushColor, bitmap, size);
+            drawPoint(x0 + x, x0 - y, brushColor, bitmap, size);
 
             if (err <= 0) {
                 y++;

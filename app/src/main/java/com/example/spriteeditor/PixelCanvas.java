@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -94,6 +95,8 @@ public class PixelCanvas extends View {
             public boolean onSingleTapConfirmed(MotionEvent e) {
                 mode = preMode;
                 movable = false;
+                if(mode != DRAWMODE.CUT)
+                updateBitmapHistory();
                 GraphicUlti.drawShape((int)pvTop,(int)pvLeft,preview,bitmap);
                 invalidate();
                 return true;
@@ -119,10 +122,10 @@ public class PixelCanvas extends View {
                         shapeStartY = roundedY;
                         break;
                     case MotionEvent.ACTION_MOVE:
-                        int preViewWidth = Math.abs(shapeStartX - roundedX) + 1 ;
-                        int preViewHeight = Math.abs(shapeStartY - roundedY) + 1 ;
+                        int preViewWidth = Math.abs(shapeStartX - roundedX) + 1 + brushSize;
+                        int preViewHeight = Math.abs(shapeStartY - roundedY) + 1 + brushSize;
                         if(mode == DRAWMODE.CIRCLE){
-                            int diameter = 2*Math.max(preViewWidth,preViewHeight)+1;
+                            int diameter = 2*Math.max(preViewWidth,preViewHeight)+(brushSize!=1?1:0);
                             preview = Bitmap.createBitmap(diameter,diameter,Bitmap.Config.ARGB_8888);
                             pvLeft = shapeStartX-(diameter/2);
                             pvTop = shapeStartY-(diameter/2);
@@ -133,13 +136,15 @@ public class PixelCanvas extends View {
                         }
                         switch (mode) {
                             case CUT:
+                                updateBitmapHistory();
                                 GraphicUlti.drawCut((int)pvTop,(int)pvLeft,bitmap,preview);
                                 break;
                             case LINE:
-                                int x1=shapeStartX - (int)pvLeft;
-                                int y1=shapeStartY - (int)pvTop;
-                                int x2=roundedX - (int)pvLeft;
-                                int y2=roundedY - (int)pvTop;
+                                int offset = brushSize>0?1:0;
+                                int x1=shapeStartX - (int)pvLeft+offset;
+                                int y1=shapeStartY - (int)pvTop+offset;
+                                int x2=roundedX - (int)pvLeft+offset;
+                                int y2=roundedY - (int)pvTop+offset;
                                 GraphicUlti.drawLine(x1,y1,x2,y2,preview,brushColor,brushSize);
                                 break;
                             case RECT:
@@ -192,11 +197,11 @@ public class PixelCanvas extends View {
             if(mode == DRAWMODE.MOVE){
                 shapeMove.onTouchEvent(event);
             }else {
-                if(event.getActionMasked()==MotionEvent.ACTION_DOWN) {
-                    updateBitmapHistory();
-                }
                 switch (mode) {
                     case PEN:
+                        if(event.getActionMasked()==MotionEvent.ACTION_DOWN) {
+                            updateBitmapHistory();
+                        }
                         GraphicUlti.drawPoint(roundedX,roundedY,brushColor,bitmap,brushSize);
                         break;
                     case FILL:
