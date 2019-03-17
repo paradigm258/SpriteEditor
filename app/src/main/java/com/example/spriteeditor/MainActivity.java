@@ -1,5 +1,6 @@
 package com.example.spriteeditor;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -15,7 +16,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
-import android.support.v4.graphics.ColorUtils;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
@@ -31,26 +31,31 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Toast;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
-    PixelCanvas pixelCanvas;
-    ImageView imageView;
+    public static final int TOGGLE_ERASER = 2;
     private static final int PICK_IMAGE = 100;
     public static final int SET_COLOR = 1;
     Uri imageUri;
+    PixelCanvas pixelCanvas;
+    ImageView imageView;
     ImageButton btnTool, btnPencil, btnLine, btnFloodFill, btnCut,
             btnColorPicker, btnCustomColor, btnRect, btnCircle,
             btnEraser, btnBrushColor, btnBrushSize, btnUndo, btnRedo;
-    int[] brushImageId;
+    final int[] brushImageId = {
+            R.drawable.brush_small,
+            R.drawable.brush_medium,
+            R.drawable.brush_large
+    };
     HorizontalScrollView colorBar, toolBar;
     LinearLayout colorBarContainer, toolBarContainer;
     ConstraintLayout customColorBar;
@@ -65,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
     ImageButton customColor;
 
     String imageName;
-    Handler handler;
+    MyHandler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,19 +79,7 @@ public class MainActivity extends AppCompatActivity {
         resources = getResources();
         imageView = findViewById(R.id.imageView);
 
-        handler = new Handler() {
-            @Override
-            public void handleMessage(Message msg) {
-                switch (msg.what) {
-                    case SET_COLOR:
-                        btnBrushColor.setBackgroundColor(msg.getData().getInt("color"));
-                        break;
-                    default:
-                        imageView.setImageBitmap(Bitmap.createScaledBitmap
-                                (pixelCanvas.bitmap, 256, 256, false));
-                }
-            }
-        };
+        handler = new MyHandler(this);
 
         pixelCanvas = findViewById(R.id.pc);
         pixelCanvas.post(new Runnable() {
@@ -125,11 +118,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         editText = findViewById(R.id.editText);
-        editText.setText(Integer.toHexString(pixelCanvas.brushColor));
+        editText.setText(Integer.toHexString(pixelCanvas.getBrushColor()));
         editText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
-                if(!hasFocus){
+                if (!hasFocus) {
                     hideKeyboard(v);
                 }
             }
@@ -220,43 +213,7 @@ public class MainActivity extends AppCompatActivity {
         btnEraser.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (pixelCanvas.eraser) {
-                    pixelCanvas.setEraser(false);
-                    Integer drawableId = (Integer) btnTool.getTag();
-                    switch (drawableId) {
-                        case R.drawable.pencil:
-                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.PEN);
-                            break;
-                        case R.drawable.line:
-                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.LINE);
-                            break;
-                        case R.drawable.flood_fill:
-                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.FILL);
-                            break;
-                        case R.drawable.cut:
-                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.CUT);
-                            break;
-                        case R.drawable.rect:
-                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.RECT);
-                            break;
-                        case R.drawable.circle:
-                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.CIRCLE);
-                            break;
-                        case R.drawable.color_picker:
-                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.PICK);
-                            break;
-                        default:
-                            pixelCanvas.setMode(PixelCanvas.DRAWMODE.PEN);
-                            break;
-                    }
-                    pixelCanvas.brushColor = ColorUtils.setAlphaComponent(pixelCanvas.brushColor, 255);
-                    btnEraser.setBackgroundColor(0x00000000);
-                } else {
-                    pixelCanvas.setEraser(true);
-                    pixelCanvas.setMode(PixelCanvas.DRAWMODE.PEN);
-                    pixelCanvas.brushColor = ColorUtils.setAlphaComponent(pixelCanvas.brushColor, 0);
-                    btnEraser.setBackgroundColor(0xFF9E9E9E);
-                }
+                pixelCanvas.setEraser(!pixelCanvas.getEraser());
             }
         });
 
@@ -276,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
         btnRedo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (pixelCanvas.historyCounter < pixelCanvas.historySize-1) {
+                if (pixelCanvas.historyCounter < pixelCanvas.historySize - 1) {
                     if (pixelCanvas.bitmapHistory[pixelCanvas.historyCounter + 1] != null) {
                         pixelCanvas.setBitmap(pixelCanvas.bitmapHistory[++pixelCanvas.historyCounter]);
                     } else if (pixelCanvas.bitmapHistory[pixelCanvas.historyCounter + 1] == null && pixelCanvas.lastBitmap != null) {
@@ -294,10 +251,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        brushImageId = new int[3];
-        brushImageId[0] = R.drawable.brush_small;
-        brushImageId[1] = R.drawable.brush_medium;
-        brushImageId[2] = R.drawable.brush_large;
+
         btnBrushSize = findViewById(R.id.btnBrushSize);
 
         btnBrushSize.setOnClickListener(new View.OnClickListener() {
@@ -318,6 +272,8 @@ public class MainActivity extends AppCompatActivity {
     public void setToolBarButtonHandler(PixelCanvas.DRAWMODE drawmode, int resource) {
         if (!pixelCanvas.getEraser()) {
             pixelCanvas.setMode(drawmode);
+        } else {
+            pixelCanvas.setPreMode(drawmode);
         }
         btnTool.setImageResource(resource);
         btnTool.setTag(resource);
@@ -340,18 +296,12 @@ public class MainActivity extends AppCompatActivity {
                 if (imageUri.getScheme().equals("file")) {
                     fileName = imageUri.getLastPathSegment();
                 } else {
-                    Cursor cursor = null;
-                    try {
-                        cursor = getContentResolver().query(imageUri, new String[]{
-                                MediaStore.Images.ImageColumns.DISPLAY_NAME
-                        }, null, null, null);
+                    try (Cursor cursor = getContentResolver().query(imageUri, new String[]{
+                            MediaStore.Images.ImageColumns.DISPLAY_NAME
+                    }, null, null, null)) {
 
                         if (cursor != null && cursor.moveToFirst()) {
                             fileName = cursor.getString(cursor.getColumnIndex(MediaStore.Images.ImageColumns.DISPLAY_NAME));
-                        }
-                    } finally {
-                        if (cursor != null) {
-                            cursor.close();
                         }
                     }
                 }
@@ -427,12 +377,12 @@ public class MainActivity extends AppCompatActivity {
 
     private String saveImageToGallery(String subFolder, boolean newName) {
         File directory = createDirectory(subFolder);
-        if (!getSupportActionBar().getTitle().toString().equals("PixarT")&&
-            subFolder.endsWith("Draft")) {
-            if(!newName){
+        if (!getSupportActionBar().getTitle().toString().equals("PixarT") &&
+                subFolder.endsWith("Draft")) {
+            if (!newName) {
                 imageName = getSupportActionBar().getTitle().toString().trim();
                 saveFile(directory);
-            }else{
+            } else {
                 openSpriteNameDialog(directory);
             }
         } else {
@@ -520,36 +470,36 @@ public class MainActivity extends AppCompatActivity {
 
     public final void notifyMediaStoreScanner(final File file) {
         try {
-            MediaStore.Images.Media.insertImage(this.getContentResolver(),
-                    file.getAbsolutePath(), file.getName(), null);
+//            MediaStore.Images.Media.insertImage(this.getContentResolver(),
+//                    file.getAbsolutePath(), file.getName(), null);
             this.sendBroadcast(new Intent(
                     Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(file)));
-        } catch (FileNotFoundException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     @Override
     protected void onStop() {
-        if(pixelCanvas.bitmapHistory[0]!=null){
-            if(getSupportActionBar().getTitle().toString().equals("PixarT")){
+        if (pixelCanvas.bitmapHistory[0] != null) {
+            if (getSupportActionBar().getTitle().toString().equals("PixarT")) {
                 String directoryPath = Environment.getExternalStoragePublicDirectory(
                         Environment.DIRECTORY_DCIM).getAbsolutePath() + "/Sprites/Draft";
                 File directory = new File(directoryPath);
-                if(!directory.exists()){
-                    if(directory.mkdirs()){
-                        Toast.makeText(this,"Can't create directory",Toast.LENGTH_SHORT)
-                        .show();
+                if (!directory.exists()) {
+                    if (directory.mkdirs()) {
+                        Toast.makeText(this, "Can't create directory", Toast.LENGTH_SHORT)
+                                .show();
                         return;
                     }
                 }
+                @SuppressLint("SimpleDateFormat")
                 String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
                 imageName = "IMG_" + timeStamp + ".jpg";
                 saveFile(directory);
-            }else{
+            } else {
                 saveImageToGallery("Draft", false);
             }
-            pixelCanvas.setNull();
         }
         super.onStop();
     }
@@ -567,7 +517,7 @@ public class MainActivity extends AppCompatActivity {
                 pixelCanvas.getRes();
                 pixelCanvas.newHistory();
                 getSupportActionBar().setTitle("PixarT");
-                btnBrushColor.setBackgroundColor(pixelCanvas.brushColor);
+                btnBrushColor.setBackgroundColor(pixelCanvas.getBrushColor());
                 dialog.dismiss();
             }
         });
@@ -604,7 +554,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void addNewColor(String color, boolean toTop){
+    public void addNewColor(String color, boolean toTop) {
         int length40 = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 40, getResources().getDisplayMetrics());
         int length20 = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 20, getResources().getDisplayMetrics());
 
@@ -614,12 +564,12 @@ public class MainActivity extends AppCompatActivity {
         ImageButton colorButton = new ImageButton(this);
         colorButton.setBackgroundColor(colorCode);
         colorButton.setTag(colorCode);
-        colorButton.setId(colorCode+0);
+        colorButton.setId(colorCode + 0);
 
         colorButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!pixelCanvas.eraser) {
+                if (!pixelCanvas.getEraser()) {
                     pixelCanvas.setBrushColor(colorCode);
                 }
                 hidePopupBar();
@@ -630,9 +580,9 @@ public class MainActivity extends AppCompatActivity {
         layoutParams.setMargins(length20, length20, length20, length20);
         colorButton.setLayoutParams(layoutParams);
 
-        if(toTop){
+        if (toTop) {
             colorBarContainer.addView(colorButton, 0);
-        }else{
+        } else {
             colorBarContainer.addView(colorButton);
         }
     }
@@ -672,7 +622,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setSeekBarValues() {
-        int hex = pixelCanvas.brushColor;
+        int hex = pixelCanvas.getBrushColor();
         for (int i = 0; i < 4; i++) {
             int bit = 8 * (3 - i);
             argb[i] = (hex >> bit) & 255;
@@ -713,7 +663,7 @@ public class MainActivity extends AppCompatActivity {
         pixelCanvas.setBrushColor(Color.argb(argb[0], argb[1], argb[2], argb[3]));
         String newColor = editText.getText().toString().trim().substring(3);
         if (!rawColorCodes.contains(newColor)) {
-            rawColorCodes+="\n"+newColor;
+            rawColorCodes += "\n" + newColor;
             addNewColor(newColor, true);
         }
         hideKeyboard(view);
@@ -724,7 +674,34 @@ public class MainActivity extends AppCompatActivity {
         inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
+    private static class MyHandler extends Handler {
+        private final WeakReference<MainActivity> activity;
 
+        private MyHandler(MainActivity activity) {
+            this.activity = new WeakReference<>(activity);
+        }
 
+        @Override
+        public void handleMessage(Message msg) {
+            MainActivity mainActivity = activity.get();
+            if (mainActivity != null) {
+                mainActivity.handleMessage(msg);
+            }
+        }
+    }
+
+    public void handleMessage(Message msg) {
+        switch (msg.what) {
+            case SET_COLOR:
+                btnBrushColor.setBackgroundColor(msg.getData().getInt("color"));
+                break;
+            case TOGGLE_ERASER:
+                btnEraser.setBackgroundColor(msg.getData().getInt("color"));
+                break;
+            default:
+                imageView.setImageBitmap(Bitmap.createScaledBitmap
+                        (pixelCanvas.bitmap, 256, 256, false));
+        }
+    }
 
 }
