@@ -5,9 +5,9 @@ import android.graphics.Point;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
-final class GraphicUlti {
+final class GraphicUtil {
     static void drawCut(int top, int left, Bitmap src, Bitmap dst) {
-        for (int x = 0; x < dst.getWidth(); x++) {
+        for (int x = 0; x < dst.getWidth() ; x++) {
             for (int y = 0; y < dst.getHeight(); y++) {
                 dst.setPixel(x, y, src.getPixel(x + left, y + top));
             }
@@ -25,21 +25,21 @@ final class GraphicUlti {
         }
     }
 
-    static void drawRect(Bitmap bitmap, int brushColor, int size) {
-        int pivot = size>0?1:0;
-        int p = size>1?1:0;
+    static void drawRect(int brushColor, Bitmap bitmap, int size) {
+        int pivot = size > 0 ? 1 : 0;
+        int p = size > 1 ? 1 : 0;
         for (int x = pivot; x < bitmap.getWidth(); x++) {
             drawPoint(x, pivot, brushColor, bitmap, size);
-            drawPoint(x, bitmap.getHeight() - 1-p, brushColor, bitmap, size);
+            drawPoint(x, bitmap.getHeight() - 1 - p, brushColor, bitmap, size);
         }
         for (int y = pivot; y < bitmap.getHeight(); y++) {
             drawPoint(pivot, y, brushColor, bitmap, size);
-            drawPoint(bitmap.getWidth() - 1-p, y, brushColor, bitmap, size);
+            drawPoint(bitmap.getWidth() - 1 - p, y, brushColor, bitmap, size);
         }
     }
 
     @SuppressWarnings("SuspiciousNameCombination")
-    static void drawLine(int x1, int y1, int x2, int y2, Bitmap preview, int brushColor, int size) {
+    static void drawLine(int x1, int y1, int x2, int y2, int brushColor, Bitmap preview, int size) {
         boolean steep = Math.abs(y1 - y2) > Math.abs(x1 - x2);
         if (steep) {
             int temp;
@@ -80,7 +80,8 @@ final class GraphicUlti {
         }
     }
 
-    static void floodFill(int x, int y, int floodColor, Bitmap bitmap, int brushColor) {
+    static void floodFill(int x, int y, int brushColor, Bitmap bitmap) {
+        int floodColor = bitmap.getPixel(x,y);
         if (floodColor == brushColor) return;
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
@@ -102,14 +103,14 @@ final class GraphicUlti {
     }
 
     static void drawCircle(int brushColor, Bitmap bitmap, int size) {
-        int radius = (bitmap.getWidth()/2)+1-(size>0?1:0);
-        int x0 = bitmap.getWidth()/2;
+        int radius = (bitmap.getWidth() / 2) + 1 - (size > 0 ? 1 : 0);
+        int x0 = bitmap.getWidth() / 2;
 
         int x = radius - 1;
         int y = 0;
         int dx = 1;
         int dy = 1;
-        int err = dx - (radius*2);
+        int err = dx - (radius * 2);
         while (x >= y) {
             drawPoint(x0 + x, x0 + y, brushColor, bitmap, size);
             drawPoint(x0 + y, x0 + x, brushColor, bitmap, size);
@@ -129,7 +130,7 @@ final class GraphicUlti {
             if (err > 0) {
                 x--;
                 dx += 2;
-                err += dx - (radius*2);
+                err += dx - (radius * 2);
             }
         }
     }

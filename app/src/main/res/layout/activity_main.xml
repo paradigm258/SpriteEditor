@@ -215,7 +215,7 @@
         app:srcCompat="@drawable/brush_small" />
 
     <ImageView
-        android:id="@+id/imageView"
+        android:id="@+id/overView"
         android:layout_width="150dp"
         android:layout_height="150dp"
         android:background="@drawable/overview"
@@ -238,7 +238,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/imageView"
+        app:layout_constraintStart_toEndOf="@+id/overView"
         app:layout_constraintTop_toBottomOf="@+id/divider"
         app:srcCompat="@drawable/undo" />
 
@@ -250,7 +250,7 @@
         android:padding="0dp"
         android:scaleType="fitXY"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/imageView"
+        app:layout_constraintEnd_toStartOf="@+id/overView"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/divider"
@@ -262,7 +262,7 @@
         android:layout_height="1dp"
         android:background="?android:attr/listDivider"
         android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/imageView"
+        app:layout_constraintBottom_toTopOf="@+id/overView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btnTool" />
