@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.database.Cursor;
@@ -70,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
     int[] argb = new int[4];
     SeekBar[] argbSeekBar = new SeekBar[4];
-    EditText editText;
+    EditText etCustomColor;
     ImageButton customColor;
 
     String imageName;
@@ -79,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
 
         resources = getResources();
@@ -122,9 +124,9 @@ public class MainActivity extends AppCompatActivity {
                 coverView.setVisibility(View.VISIBLE);
             }
         });
-        editText = findViewById(R.id.editText);
-        editText.setText(Integer.toHexString(pixelCanvas.getBrushColor()));
-        editText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+        etCustomColor = findViewById(R.id.editText);
+        etCustomColor.setText(Integer.toHexString(pixelCanvas.getBrushColor()));
+        etCustomColor.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
                 if (!hasFocus) {
@@ -604,9 +606,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                     color.append(String.format("%02X", argb[i]));
                 }
-                editText.setText(color.toString());
+                etCustomColor.setText(color.toString());
                 customColor.setBackgroundColor(Color.argb(argb[0], argb[1], argb[2], argb[3]));
-                hideKeyboard(editText);
+                hideKeyboard(etCustomColor);
             }
 
             @Override
@@ -637,7 +639,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void customColor(View view) {
-        String hex = editText.getText().toString().trim();
+        String hex = etCustomColor.getText().toString().trim();
         if (hex.length() == 9) {
             for (int i = 0; i < 4; i++) {
                 int start = 1 + i * 2;
@@ -651,7 +653,7 @@ public class MainActivity extends AppCompatActivity {
                         argb[j] = argbSeekBar[j].getProgress();
                         color.append(String.format("%02X", argb[j]));
                     }
-                    editText.setText(color.toString());
+                    etCustomColor.setText(color.toString());
                 }
                 argbSeekBar[i].setProgress(argb[i]);
             }
@@ -662,11 +664,11 @@ public class MainActivity extends AppCompatActivity {
                 argb[i] = argbSeekBar[i].getProgress();
                 color.append(String.format("%02X", argb[i]));
             }
-            editText.setText(color.toString());
+            etCustomColor.setText(color.toString());
         }
         customColor.setBackgroundColor(Color.argb(argb[0], argb[1], argb[2], argb[3]));
         pixelCanvas.setBrushColor(Color.argb(argb[0], argb[1], argb[2], argb[3]));
-        String newColor = editText.getText().toString().trim().substring(3);
+        String newColor = etCustomColor.getText().toString().trim().substring(3);
         if (!rawColorCodes.contains(newColor)) {
             rawColorCodes += "\n" + newColor;
             addNewColor(newColor, true);
