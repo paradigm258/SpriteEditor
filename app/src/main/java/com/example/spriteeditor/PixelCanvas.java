@@ -56,6 +56,7 @@ public class PixelCanvas extends View {
         CIRCLE,
         PICK
     }
+
     //Variables to determine how touch input will be execute
     private DRAWMODE mode = DRAWMODE.PEN;
     private DRAWMODE preMode;
@@ -87,7 +88,7 @@ public class PixelCanvas extends View {
 
             @Override
             public boolean onScaleBegin(ScaleGestureDetector detector) {
-                if (historyCounter >= 1  && mode == DRAWMODE.PEN) {
+                if (historyCounter >= 1 && mode == DRAWMODE.PEN) {
                     if (lastBitmap == null) {
                         lastBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
                     }
@@ -147,8 +148,8 @@ public class PixelCanvas extends View {
                         if (mode == DRAWMODE.CIRCLE) {
                             int diameter = 2 * Math.max(preViewWidth, preViewHeight) + (brushSize != 1 ? 1 : 0);
                             preview = Bitmap.createBitmap(diameter, diameter, Bitmap.Config.ARGB_8888);
-                            pvLeft = shapeStartX - (float)(diameter / 2);
-                            pvTop = shapeStartY - (float)(diameter / 2);
+                            pvLeft = shapeStartX - (float) (diameter / 2);
+                            pvTop = shapeStartY - (float) (diameter / 2);
                         } else {
                             preview = Bitmap.createBitmap(preViewWidth, preViewHeight, Bitmap.Config.ARGB_8888);
                             pvLeft = Math.min(shapeStartX, roundedX);
@@ -168,7 +169,7 @@ public class PixelCanvas extends View {
                                 GraphicUtil.drawLine(x1, y1, x2, y2, brushColor, preview, brushSize);
                                 break;
                             case RECT:
-                                GraphicUtil.drawRect(brushColor, preview,  brushSize);
+                                GraphicUtil.drawRect(brushColor, preview, brushSize);
                                 break;
                             case CIRCLE:
                                 GraphicUtil.drawCircle(brushColor, preview, brushSize);
@@ -216,13 +217,13 @@ public class PixelCanvas extends View {
         int pointerCount = event.getPointerCount();
         if (pointerCount > 1) {
             dragAndScale(event);
-        } else if(scaling){
-            if (event.getActionMasked()==MotionEvent.ACTION_UP) {
+        } else if (scaling) {
+            if (event.getActionMasked() == MotionEvent.ACTION_UP) {
                 scaling = false;
             }
-        }else{
-            roundedX = Math.max(Math.min((int) Math.floor(event.getX() / scale - left),imgW-1),0);
-            roundedY = Math.max(Math.min((int) Math.floor(event.getY() / scale - top),imgH-1),0);
+        } else {
+            roundedX = Math.max(Math.min((int) Math.floor(event.getX() / scale - left), imgW - 1), 0);
+            roundedY = Math.max(Math.min((int) Math.floor(event.getY() / scale - top), imgH - 1), 0);
             if (mode == DRAWMODE.MOVE) {
                 moveDetector.onTouchEvent(event);
             } else {
@@ -234,8 +235,10 @@ public class PixelCanvas extends View {
                         GraphicUtil.drawPoint(roundedX, roundedY, brushColor, bitmap, brushSize);
                         break;
                     case FILL:
-                        updateBitmapHistory();
-                        GraphicUtil.floodFill(roundedX, roundedY, brushColor, bitmap);
+                        if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                            updateBitmapHistory();
+                            GraphicUtil.floodFill(roundedX, roundedY, brushColor, bitmap);
+                        }
                         break;
                     case PICK:
                         pickColor();
@@ -384,7 +387,7 @@ public class PixelCanvas extends View {
         Message msg = handler.obtainMessage();
         msg.what = MainActivity.TOGGLE_ERASER;
         Bundle bundle = new Bundle();
-        bundle.putInt("color",enable?0xFF9E9E9E:0x00000000);
+        bundle.putInt("color", enable ? 0xFF9E9E9E : 0x00000000);
         msg.setData(bundle);
         handler.sendMessage(msg);
 

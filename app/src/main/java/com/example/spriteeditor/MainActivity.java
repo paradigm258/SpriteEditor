@@ -19,7 +19,6 @@ import android.os.Message;
 import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.graphics.ColorUtils;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
@@ -35,6 +34,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Toast;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -477,8 +477,6 @@ public class MainActivity extends AppCompatActivity {
 
     public final void notifyMediaStoreScanner(final File file) {
         try {
-//            MediaStore.Images.Media.insertImage(this.getContentResolver(),
-//                    file.getAbsolutePath(), file.getName(), null);
             this.sendBroadcast(new Intent(
                     Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(file)));
         } catch (Exception e) {
@@ -681,13 +679,13 @@ public class MainActivity extends AppCompatActivity {
         inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
-    public void checkPermission(){
+    public void checkPermission() {
         int readPermission = this.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
         int writePermission = this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        if(readPermission != PackageManager.PERMISSION_GRANTED ||
-                writePermission != PackageManager.PERMISSION_GRANTED){
-            if(ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.RECORD_AUDIO)){
+        if (readPermission != PackageManager.PERMISSION_GRANTED ||
+                writePermission != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.RECORD_AUDIO)) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
                 builder.setTitle("Permission required")
                         .setMessage("PixarT app need permission to save image to and " +
@@ -701,20 +699,51 @@ public class MainActivity extends AppCompatActivity {
                         });
                 AlertDialog alertDialog = builder.create();
                 alertDialog.show();
-            }else{
+            } else {
                 requestPermission();
             }
         }
     }
 
     private final int PERMISSION_REQUEST_CODE = 100;
-    public void requestPermission(){
-        String [] permissions = {
+
+    public void requestPermission() {
+        String[] permissions = {
                 Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
         };
 
         ActivityCompat.requestPermissions(this, permissions, PERMISSION_REQUEST_CODE);
+    }
+
+    private static class MyHandler extends Handler {
+        private final WeakReference<MainActivity> activity;
+
+        private MyHandler(MainActivity activity) {
+            this.activity = new WeakReference<>(activity);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            MainActivity mainActivity = activity.get();
+            if (mainActivity != null) {
+                mainActivity.handleMessage(msg);
+            }
+        }
+    }
+
+    public void handleMessage(Message msg) {
+        switch (msg.what) {
+            case SET_COLOR:
+                btnBrushColor.setBackgroundColor(msg.getData().getInt("color"));
+                break;
+            case TOGGLE_ERASER:
+                btnEraser.setBackgroundColor(msg.getData().getInt("color"));
+                break;
+            default:
+                overView.setImageBitmap(Bitmap.createScaledBitmap
+                        (pixelCanvas.bitmap, 256, 256, false));
+        }
     }
 
 }
