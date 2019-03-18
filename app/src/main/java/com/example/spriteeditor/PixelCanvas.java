@@ -17,6 +17,34 @@ import android.view.View;
 
 public class PixelCanvas extends View {
 
+    //Determine history for undo and redo
+    Bitmap lastBitmap;
+    Bitmap[] bitmapHistory;
+    int historyCounter;
+    int historySize;
+
+    //Bitmap to be display
+    Bitmap bitmap;
+    Bitmap background;
+    Bitmap preview;
+
+    //Calculated coordinate on bitmap from touch input
+    private int roundedX;
+    private int roundedY;
+
+    //Variable to determine how display bitmaps
+    Paint paint;
+    Paint pvPaint;
+    float width;
+    float height;
+    int imgW;
+    int imgH;
+    private float left = 0;
+    private float top = 0;
+    private float scale = 1;
+    private float minScale;
+    private float pvTop;
+    private float pvLeft;
 
     public enum DRAWMODE {
         PEN,
@@ -35,34 +63,7 @@ public class PixelCanvas extends View {
     private boolean movable;
     private int brushColor;
     private boolean eraser;
-
-    //Determine history for undo and redo
-    Bitmap lastBitmap;
-    Bitmap[] bitmapHistory;
-    int historyCounter;
-    int historySize;
-
-    //Bitmap to be display
-    Bitmap bitmap;
-    Bitmap background;
-    Bitmap preview;
-
-    //Calculated coordinate on bitmap from touch input
-    private int roundedX;
-    private int roundedY;
-
-    //Variable to determine how display bitmaps
-    Paint paint;
-    float width;
-    float height;
-    int imgW;
-    int imgH;
-    private float left = 0;
-    private float top = 0;
-    private float scale = 1;
-    private float minScale;
-    private float pvTop;
-    private float pvLeft;
+    private boolean scaling;
 
     //Touch listener to process touch input
     ScaleGestureDetector scaleDetector;
@@ -82,6 +83,18 @@ public class PixelCanvas extends View {
                 scale = scale * detector.getScaleFactor();
                 scale = Math.max(minScale, Math.min(scale, 64));
                 return true;
+            }
+
+            @Override
+            public boolean onScaleBegin(ScaleGestureDetector detector) {
+                if (historyCounter >= 1  && mode == DRAWMODE.PEN) {
+                    if (lastBitmap == null) {
+                        lastBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                    }
+                    setBitmap(bitmapHistory[--historyCounter]);
+                }
+                scaling = true;
+                return super.onScaleBegin(detector);
             }
         });
         panDetector = new GestureDetector(this.getContext(), new GestureDetector.SimpleOnGestureListener() {
@@ -187,6 +200,11 @@ public class PixelCanvas extends View {
         paint.setDither(false);
         paint.setFilterBitmap(false);
 
+        pvPaint = new Paint(paint);
+        pvPaint.setColor(0xFF00695D);
+        pvPaint.setStyle(Paint.Style.STROKE);
+
+        //Default canvas state
         brushColor = 0xFF000000;
         historySize = 20;
         brushSize = 0;
@@ -198,9 +216,13 @@ public class PixelCanvas extends View {
         int pointerCount = event.getPointerCount();
         if (pointerCount > 1) {
             dragAndScale(event);
-        } else {
-            roundedX = (int) Math.floor(event.getX() / scale - left);
-            roundedY = (int) Math.floor(event.getY() / scale - top);
+        } else if(scaling){
+            if (event.getActionMasked()==MotionEvent.ACTION_UP) {
+                scaling = false;
+            }
+        }else{
+            roundedX = Math.max(Math.min((int) Math.floor(event.getX() / scale - left),imgW-1),0);
+            roundedY = Math.max(Math.min((int) Math.floor(event.getY() / scale - top),imgH-1),0);
             if (mode == DRAWMODE.MOVE) {
                 moveDetector.onTouchEvent(event);
             } else {
@@ -212,7 +234,8 @@ public class PixelCanvas extends View {
                         GraphicUtil.drawPoint(roundedX, roundedY, brushColor, bitmap, brushSize);
                         break;
                     case FILL:
-                        GraphicUtil.floodFill(roundedX, roundedY, bitmap.getPixel(roundedX, roundedY), brushColor, bitmap);
+                        updateBitmapHistory();
+                        GraphicUtil.floodFill(roundedX, roundedY, brushColor, bitmap);
                         break;
                     case PICK:
                         pickColor();
@@ -229,7 +252,6 @@ public class PixelCanvas extends View {
         }
         performClick();
         invalidate();
-        handler.sendEmptyMessage(0);
         return true;
     }
 
@@ -250,9 +272,6 @@ public class PixelCanvas extends View {
             //Draw preview
             canvas.drawBitmap(preview, (int) (pvLeft) + left, (int) (pvTop) + top, paint);
             //Draw outline
-            Paint pvPaint = new Paint(paint);
-            pvPaint.setColor(0xFF00695D);
-            pvPaint.setStyle(Paint.Style.STROKE);
             pvPaint.setStrokeWidth(1 / scale * 5);
             canvas.drawRect((int) (pvLeft) + left, (int) (pvTop) + top,
                     (int) (pvLeft) + left + preview.getWidth(), (int) (pvTop) + top + preview.getHeight(), pvPaint);
@@ -266,23 +285,7 @@ public class PixelCanvas extends View {
         invalidate();
     }
 
-    public void setBrushColor(int brushColor) {
-        this.brushColor = brushColor;
-
-        Message msg = handler.obtainMessage();
-        msg.what = MainActivity.SET_COLOR;
-        Bundle data = new Bundle();
-        data.putInt("color", brushColor);
-        msg.setData(data);
-
-        handler.sendMessage(msg);
-    }
-
-    public void setHandler(Handler handler) {
-        this.handler = handler;
-    }
-
-    public void getRes() {
+    public void setResolution() {
         //Adjust canvas for image resolution
         width = getWidth();
         height = getHeight();
@@ -302,6 +305,26 @@ public class PixelCanvas extends View {
                 background.setPixel(x, y, x % 2 == y % 2 ? 0xFFF3F3F3 : 0xFFC2C2C2);
             }
         }
+    }
+
+    public void setBrushColor(int brushColor) {
+        this.brushColor = brushColor;
+
+        Message msg = handler.obtainMessage();
+        msg.what = MainActivity.SET_COLOR;
+        Bundle data = new Bundle();
+        data.putInt("color", brushColor);
+        msg.setData(data);
+
+        handler.sendMessage(msg);
+    }
+
+    public int getBrushColor() {
+        return brushColor;
+    }
+
+    public void setHandler(Handler handler) {
+        this.handler = handler;
     }
 
     public void newHistory() {
@@ -326,6 +349,13 @@ public class PixelCanvas extends View {
         }
     }
 
+    public void setNull() {
+        for (int i = historyCounter; i < historySize; i++) {
+            bitmapHistory[i] = null;
+        }
+        lastBitmap = null;
+    }
+
     public void setMode(DRAWMODE mode) {
         if (movable) {
             movable = false;
@@ -341,28 +371,6 @@ public class PixelCanvas extends View {
         this.mode = mode;
     }
 
-    public void setNull() {
-        for (int i = historyCounter; i < historySize; i++) {
-            bitmapHistory[i] = null;
-        }
-        lastBitmap = null;
-    }
-
-    private void dragAndScale(MotionEvent event) {
-        scaleDetector.onTouchEvent(event);
-        panDetector.onTouchEvent(event);
-        left = Math.min(0, Math.max(left, width / scale - imgW));
-        top = Math.min(0, Math.max(top, height / scale - imgW));
-    }
-
-    private void pickColor() {
-        setBrushColor(bitmap.getPixel(roundedX, roundedY));
-    }
-
-    public int getBrushColor() {
-        return brushColor;
-    }
-
     public void setEraser(boolean enable) {
         if (enable) {
             preMode = mode;
@@ -372,12 +380,14 @@ public class PixelCanvas extends View {
             brushColor = ColorUtils.setAlphaComponent(brushColor, 255);
             mode = preMode;
         }
+
         Message msg = handler.obtainMessage();
         msg.what = MainActivity.TOGGLE_ERASER;
         Bundle bundle = new Bundle();
         bundle.putInt("color",enable?0xFF9E9E9E:0x00000000);
         msg.setData(bundle);
         handler.sendMessage(msg);
+
         this.eraser = enable;
     }
 
@@ -397,4 +407,22 @@ public class PixelCanvas extends View {
         return this.brushSize;
     }
 
+    /**
+     * Get the color of the pixel at the touched coordinate
+     */
+    private void pickColor() {
+        setBrushColor(bitmap.getPixel(roundedX, roundedY));
+    }
+
+    /**
+     * Process drag and/or scale input
+     *
+     * @param event
+     */
+    private void dragAndScale(MotionEvent event) {
+        scaleDetector.onTouchEvent(event);
+        panDetector.onTouchEvent(event);
+        left = Math.min(0, Math.max(left, width / scale - imgW));
+        top = Math.min(0, Math.max(top, height / scale - imgW));
+    }
 }

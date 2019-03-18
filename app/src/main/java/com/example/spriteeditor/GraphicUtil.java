@@ -7,7 +7,7 @@ import java.util.Queue;
 
 final class GraphicUtil {
     static void drawCut(int top, int left, Bitmap src, Bitmap dst) {
-        for (int x = 0; x < dst.getWidth(); x++) {
+        for (int x = 0; x < dst.getWidth() ; x++) {
             for (int y = 0; y < dst.getHeight(); y++) {
                 dst.setPixel(x, y, src.getPixel(x + left, y + top));
             }
@@ -80,7 +80,8 @@ final class GraphicUtil {
         }
     }
 
-    static void floodFill(int x, int y, int floodColor, int brushColor, Bitmap bitmap) {
+    static void floodFill(int x, int y, int brushColor, Bitmap bitmap) {
+        int floodColor = bitmap.getPixel(x,y);
         if (floodColor == brushColor) return;
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();

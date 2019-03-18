@@ -45,9 +45,9 @@ public class MainActivity extends AppCompatActivity {
     public static final int TOGGLE_ERASER = 2;
     private static final int PICK_IMAGE = 100;
     public static final int SET_COLOR = 1;
-    Uri imageUri;
+
     PixelCanvas pixelCanvas;
-    ImageView imageView;
+    ImageView overView;
     ImageButton btnTool, btnPencil, btnLine, btnFloodFill, btnCut,
             btnColorPicker, btnCustomColor, btnRect, btnCircle,
             btnEraser, btnBrushColor, btnBrushSize, btnUndo, btnRedo;
@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         resources = getResources();
-        imageView = findViewById(R.id.imageView);
+        overView = findViewById(R.id.overView);
 
         handler = new MyHandler(this);
 
@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 pixelCanvas.setBitmap(
                         Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888));
-                pixelCanvas.getRes();
+                pixelCanvas.setResolution();
                 loadColorBar();
                 setupSeekBars();
             }
@@ -285,11 +285,11 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && requestCode == PICK_IMAGE) {
             try {
-                imageUri = data.getData();
+                Uri imageUri = data.getData();
                 InputStream imageStream = getContentResolver().openInputStream(imageUri);
                 Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
                 pixelCanvas.setBitmap(selectedImage);
-                pixelCanvas.getRes();
+                pixelCanvas.setResolution();
                 pixelCanvas.newHistory();
 
                 String fileName = "";
@@ -514,7 +514,7 @@ public class MainActivity extends AppCompatActivity {
                 int canvasSize = Integer.parseInt(listSizes[which]);
                 Bitmap newBitmap = Bitmap.createBitmap(canvasSize, canvasSize, Bitmap.Config.ARGB_8888);
                 pixelCanvas.setBitmap(newBitmap);
-                pixelCanvas.getRes();
+                pixelCanvas.setResolution();
                 pixelCanvas.newHistory();
                 getSupportActionBar().setTitle("PixarT");
                 btnBrushColor.setBackgroundColor(pixelCanvas.getBrushColor());
@@ -699,7 +699,7 @@ public class MainActivity extends AppCompatActivity {
                 btnEraser.setBackgroundColor(msg.getData().getInt("color"));
                 break;
             default:
-                imageView.setImageBitmap(Bitmap.createScaledBitmap
+                overView.setImageBitmap(Bitmap.createScaledBitmap
                         (pixelCanvas.bitmap, 256, 256, false));
         }
     }
